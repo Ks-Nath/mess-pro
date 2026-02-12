@@ -19,7 +19,7 @@ export default function Login() {
         setError('');
 
         if (!username.trim() || !password.trim()) {
-            setError(role === 'user' ? 'Please enter your Mess Number and Phone Number' : 'Please enter your Email and Password');
+            setError(role === 'user' ? 'Please enter your Username and Password' : 'Please enter your Email and Password');
             return;
         }
 
@@ -94,26 +94,26 @@ export default function Login() {
                         <div className="space-y-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">
-                                    {role === 'user' ? 'Mess Number' : 'Email Address'}
+                                    {role === 'user' ? 'Username' : 'Email Address'}
                                 </label>
                                 <input
                                     type="text"
                                     value={username}
                                     onChange={(e) => { setUsername(e.target.value); setError(''); }}
-                                    placeholder={role === 'user' ? 'e.g. MESS-001' : 'name@university.edu'}
+                                    placeholder={role === 'user' ? 'Enter your username' : 'name@university.edu'}
                                     className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors placeholder:text-gray-400"
                                 />
                             </div>
 
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">
-                                    {role === 'user' ? 'Phone Number' : 'Password'}
+                                    Password
                                 </label>
                                 <input
-                                    type={role === 'user' ? 'tel' : 'password'}
+                                    type="password"
                                     value={password}
                                     onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                                    placeholder={role === 'user' ? 'e.g. 9876543210' : 'Enter your password'}
+                                    placeholder="Enter your password"
                                     className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors placeholder:text-gray-400"
                                 />
                             </div>
@@ -131,19 +131,7 @@ export default function Login() {
                         </Button>
                     </form>
 
-                    {/* Demo credentials hint */}
-                    {role === 'user' && (
-                        <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
-                            <p className="text-xs text-blue-600 font-medium mb-1">Demo Credentials</p>
-                            <p className="text-xs text-blue-500 font-mono">MESS-001 / 9876543210</p>
-                        </div>
-                    )}
-                    {role === 'admin' && (
-                        <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
-                            <p className="text-xs text-blue-600 font-medium mb-1">Demo Credentials</p>
-                            <p className="text-xs text-blue-500 font-mono">meena@university.edu / admin123</p>
-                        </div>
-                    )}
+
                 </div>
 
                 {/* Footer */}
