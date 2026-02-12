@@ -1,0 +1,121 @@
+import { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
+
+const StudentContext = createContext(null);
+
+export function StudentProvider({ children }) {
+    const [students, setStudents] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchStudents();
+
+        // Real-time subscription for student changes
+        const subscription = supabase
+            .channel('students-channel')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'students' },
+                () => {
+                    fetchStudents();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(subscription);
+        };
+    }, []);
+
+    const fetchStudents = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('students')
+                .select('*')
+                .order('mess_number', { ascending: true });
+
+            if (error) throw error;
+
+            // Map DB snake_case to camelCase used by the app
+            const mapped = (data || []).map(s => ({
+                id: s.id,
+                name: s.name,
+                messNumber: s.mess_number,
+                phone: s.phone,
+                role: 'user',
+                roomNo: s.room_no,
+                messStatus: s.mess_status,
+                messType: s.mess_type,
+                joinDate: s.join_date,
+            }));
+
+            setStudents(mapped);
+        } catch (error) {
+            console.error('Error fetching students:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const addStudent = async (newStudent) => {
+        try {
+            const { data, error } = await supabase
+                .from('students')
+                .insert([{
+                    name: newStudent.name,
+                    mess_number: newStudent.messNumber,
+                    phone: newStudent.phone,
+                    room_no: newStudent.roomNo,
+                    mess_status: newStudent.messStatus || 'Active',
+                    mess_type: newStudent.messType || 'Veg',
+                    join_date: newStudent.joinDate || new Date().toISOString().slice(0, 10),
+                }])
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            // Force refresh to ensure UI updates immediately
+            await fetchStudents();
+
+            return { success: true, data };
+        } catch (error) {
+            console.error('Error adding student:', error);
+            return { success: false, error: error.message };
+        }
+    };
+
+    const removeStudent = async (messNumber) => {
+        try {
+            const { error } = await supabase
+                .from('students')
+                .delete()
+                .eq('mess_number', messNumber);
+
+            if (error) throw error;
+
+            // Force refresh
+            await fetchStudents();
+            return { success: true };
+        } catch (error) {
+            console.error('Error removing student:', error);
+            return { success: false, error: error.message };
+        }
+    };
+
+    const getStudentByMessNumber = (messNumber) => {
+        return students.find(s => s.messNumber === messNumber);
+    };
+
+    return (
+        <StudentContext.Provider value={{ students, loading, addStudent, removeStudent, getStudentByMessNumber }}>
+            {children}
+        </StudentContext.Provider>
+    );
+}
+
+export function useStudents() {
+    const ctx = useContext(StudentContext);
+    if (!ctx) throw new Error('useStudents must be used within a StudentProvider');
+    return ctx;
+}
