@@ -60,12 +60,12 @@ export const mockStudents = [
 // Admin account — login with email + password
 export const mockAdmin = {
     id: 100,
-    name: 'Dr. Meena Sharma',
-    email: 'meena@university.edu',
+    name: 'Mess Admin',
+    email: 'admin@mess.in',
     // password: REMOVED (See .env for credentials)
     role: 'admin',
     messId: 'MESS-001',
-    designation: 'Mess In-Charge',
+    designation: 'Administrator',
 };
 
 export const weeklyMenu = {

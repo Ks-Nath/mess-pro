@@ -29,8 +29,9 @@ export function AuthProvider({ children }) {
             if (username === adminEmail && password === adminPassword) {
                 // Return mock admin profile (excluding sensitive fields if any)
                 const { password: _, ...adminData } = mockAdmin;
-                setUser(adminData);
-                localStorage.setItem('messArgUser', JSON.stringify(adminData));
+                // Use the environment email to ensure it matches what was used to login
+                setUser({ ...adminData, email: adminEmail });
+                localStorage.setItem('messArgUser', JSON.stringify({ ...adminData, email: adminEmail }));
                 return { success: true, role: 'admin' };
             }
             return { success: false, error: 'Invalid admin credentials' };

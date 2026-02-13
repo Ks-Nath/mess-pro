@@ -129,6 +129,91 @@ export default function AdminBills() {
         document.body.removeChild(link);
     };
 
+    const handleDownloadOverview = () => {
+        // Generate rows with daily status
+        const rows = studentBills.map(s => {
+            const row = {
+                'MESS NO': s.messNumber,
+                'NAME': s.name,
+            };
+
+            // Add daily columns
+            dateRange.forEach(dateKey => {
+                // Use simply the day number as header (1, 2, 3...) derived from string YYYY-MM-DD
+                // dateKey is YYYY-MM-DD. Split by '-' take last part, remove leading zero.
+                const dayPart = dateKey.split('-')[2];
+                const dayHeader = dayPart.startsWith('0') ? dayPart.substring(1) : dayPart;
+
+                const leavesOnDay = getLeavesByDate(dateKey) || [];
+                const isLeave = leavesOnDay.includes(s.messNumber);
+
+                row[dayHeader] = isLeave ? 'L' : 'X';
+            });
+
+            // Add summary columns
+            row['TOTAL DAYS'] = s.billableDays; // Active days = Billable Days
+            row['TOTAL AMOUNT'] = s.totalBill; // Final total amount
+
+            return row;
+        });
+
+        // Calculate Grand Totals for summary row
+        const grandTotalAmount = rows.reduce((sum, r) => sum + (r['TOTAL AMOUNT'] || 0), 0);
+
+        const summaryRow = {
+            'MESS NO': '',
+            'NAME': 'TOTAL',
+            'TOTAL DAYS': '',
+            'TOTAL AMOUNT': grandTotalAmount
+        };
+
+        rows.push(summaryRow);
+
+        // Define exact header order
+        const header = ['MESS NO', 'NAME'];
+        dateRange.forEach(dateKey => {
+            const dayPart = dateKey.split('-')[2];
+            const dayHeader = dayPart.startsWith('0') ? dayPart.substring(1) : dayPart;
+            header.push(dayHeader);
+        });
+        header.push('TOTAL DAYS');
+        header.push('TOTAL AMOUNT');
+
+        // Create worksheet with strict header order
+        const worksheet = XLSX.utils.json_to_sheet(rows, { header });
+
+        // Set column widths
+        const cols = [
+            { wch: 10 }, // Mess No
+            { wch: 20 }, // Name
+        ];
+        // Add width for days
+        dateRange.forEach(() => cols.push({ wch: 3 }));
+        // Add width for summary cols
+        cols.push({ wch: 12 }); // Total Days
+        cols.push({ wch: 16 }); // Total Amount
+
+        worksheet['!cols'] = cols;
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Overview');
+
+        // Generate filename
+        const filename = mode === 'month'
+            ? `mess_overview_${selectedMonth}.xlsx`
+            : `mess_overview_${startDate}_to_${endDate}.xlsx`;
+
+        // Download
+        const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
+        const link = document.createElement('a');
+        link.href = `data:application/octet-stream;base64,${wbout}`;
+        link.download = filename;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <div className="space-y-6 animate-fade-in">
             {/* Header */}
@@ -137,9 +222,14 @@ export default function AdminBills() {
                     <h1 className="text-3xl font-bold text-gray-900">Student Bills</h1>
                     <p className="text-gray-500">Generate and download bill reports as Excel.</p>
                 </div>
-                <Button onClick={handleDownloadExcel} className="gap-2 bg-green-600 hover:bg-green-700 text-white shadow-sm">
-                    <Download className="w-4 h-4" /> Download Excel
-                </Button>
+                <div className="flex gap-2">
+                    <Button onClick={handleDownloadOverview} variant="outline" className="gap-2 border-green-600 text-green-600 hover:bg-green-50 shadow-sm">
+                        <FileSpreadsheet className="w-4 h-4" /> Overview
+                    </Button>
+                    <Button onClick={handleDownloadExcel} className="gap-2 bg-green-600 hover:bg-green-700 text-white shadow-sm">
+                        <Download className="w-4 h-4" /> Download Excel
+                    </Button>
+                </div>
             </div>
 
             {/* Controls Card */}

@@ -93,11 +93,14 @@ export default function Login() {
                         {/* Inputs — change based on role */}
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">
+                                <label htmlFor="username" className="text-sm font-medium text-gray-700">
                                     {role === 'user' ? 'Username' : 'Email Address'}
                                 </label>
                                 <input
+                                    id="username"
+                                    name="username"
                                     type="text"
+                                    autoComplete="username"
                                     value={username}
                                     onChange={(e) => { setUsername(e.target.value); setError(''); }}
                                     placeholder={role === 'user' ? 'Enter your username' : 'name@university.edu'}
@@ -106,11 +109,14 @@ export default function Login() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">
+                                <label htmlFor="password" className="text-sm font-medium text-gray-700">
                                     Password
                                 </label>
                                 <input
+                                    id="password"
+                                    name="password"
                                     type="password"
+                                    autoComplete="current-password"
                                     value={password}
                                     onChange={(e) => { setPassword(e.target.value); setError(''); }}
                                     placeholder="Enter your password"
