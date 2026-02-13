@@ -97,7 +97,7 @@ export default function ManageMenu() {
             </div>
 
             {/* Day Selection */}
-            <div className="flex overflow-x-auto gap-2 pb-4 border-b border-gray-200">
+            <div className="flex overflow-x-auto gap-2 pb-4 border-b border-gray-200 px-1 scrollbar-hide">
                 {days.map(day => (
                     <button
                         key={day}

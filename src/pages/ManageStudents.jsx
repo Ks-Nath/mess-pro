@@ -135,8 +135,8 @@ export default function ManageStudents() {
             ) : (
                 /* Table */
                 <Card className="border-gray-200 shadow-sm overflow-hidden">
-                    <CardContent className="p-0">
-                        <table className="w-full text-left text-sm">
+                    <CardContent className="p-0 overflow-x-auto">
+                        <table className="w-full text-left text-sm min-w-[800px]">
                             <thead className="bg-gray-50 border-b border-gray-200">
                                 <tr>
                                     <th className="px-6 py-4 font-semibold text-gray-900">Mess No</th>

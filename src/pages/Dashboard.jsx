@@ -41,22 +41,24 @@ export default function Dashboard() {
     return (
         <div className="space-y-12 animate-fade-in">
             {/* Minimal Header */}
-            <div className="space-y-2">
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">
-                    Welcome back, {user?.name?.split(' ')[0]}
+            <div className="space-y-3">
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight break-words">
+                    Welcome back, <br className="block sm:hidden" /> {user?.name?.split(' ')[0]}
                 </h1>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     <p className="text-lg text-gray-500">What would you like to do today?</p>
-                    {user?.messStatus === 'Active' ? (
-                        <Badge variant="success" className="rounded-full px-3">Mess Active</Badge>
-                    ) : (
-                        <Badge variant="warning" className="rounded-full px-3">On Leave Today</Badge>
-                    )}
+                    <div className="flex">
+                        {user?.messStatus === 'Active' ? (
+                            <Badge variant="success" className="rounded-full px-3">Mess Active</Badge>
+                        ) : (
+                            <Badge variant="warning" className="rounded-full px-3">On Leave Today</Badge>
+                        )}
+                    </div>
                 </div>
             </div>
 
             {/* 3 Large Action Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {actions.map((action) => (
                     <button
                         key={action.title}

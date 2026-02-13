@@ -234,69 +234,72 @@ export default function AdminBills() {
 
             {/* Controls Card */}
             <Card className="border-gray-200 shadow-sm">
-                <CardContent className="p-5">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <CardContent className="p-4 sm:p-5">
+                    <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
                         {/* Mode Toggle */}
-                        <div className="p-1 bg-gray-100 rounded-lg grid grid-cols-2 gap-1 border border-gray-200 shrink-0">
-                            {[{ key: 'month', label: 'Full Month', icon: Calendar }, { key: 'range', label: 'Custom Range', icon: CalendarRange }].map(({ key, label, icon: Icon }) => (
+                        <div className="w-full sm:w-auto p-1 bg-gray-100 rounded-lg grid grid-cols-2 gap-1 border border-gray-200 shrink-0">
+                            {[{ key: 'month', label: 'Full Month', icon: Calendar }, { key: 'range', label: 'Range', icon: CalendarRange }].map(({ key, label, icon: Icon }) => (
                                 <button
                                     key={key}
                                     type="button"
                                     onClick={() => setMode(key)}
                                     className={cn(
-                                        "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-all",
+                                        "flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-all",
                                         mode === key
                                             ? "bg-white text-gray-900 shadow-sm border border-gray-200/50"
                                             : "text-gray-500 hover:text-gray-700"
                                     )}
                                 >
                                     <Icon className="w-4 h-4" />
-                                    {label}
+                                    <span className="hidden sm:inline">{label}</span>
+                                    <span className="sm:hidden">{label === 'Full Month' ? 'Month' : 'Range'}</span>
                                 </button>
                             ))}
                         </div>
 
                         {/* Date Inputs */}
-                        {mode === 'month' ? (
-                            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
-                                <Calendar className="w-4 h-4 text-gray-400" />
-                                <input
-                                    type="month"
-                                    className="text-sm outline-none text-gray-700 bg-transparent"
-                                    value={selectedMonth}
-                                    onChange={(e) => setSelectedMonth(e.target.value)}
-                                />
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
-                                    <span className="text-xs text-gray-400 font-medium">From</span>
+                        <div className="w-full sm:w-auto">
+                            {mode === 'month' ? (
+                                <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm w-full sm:w-auto">
+                                    <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
                                     <input
-                                        type="date"
-                                        className="text-sm outline-none text-gray-700 bg-transparent"
-                                        value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
+                                        type="month"
+                                        className="text-sm outline-none text-gray-700 bg-transparent w-full sm:w-auto"
+                                        value={selectedMonth}
+                                        onChange={(e) => setSelectedMonth(e.target.value)}
                                     />
                                 </div>
-                                <span className="text-gray-400">→</span>
-                                <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
-                                    <span className="text-xs text-gray-400 font-medium">To</span>
-                                    <input
-                                        type="date"
-                                        className="text-sm outline-none text-gray-700 bg-transparent"
-                                        value={endDate}
-                                        onChange={(e) => setEndDate(e.target.value)}
-                                    />
+                            ) : (
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+                                    <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm w-full sm:w-auto">
+                                        <span className="text-xs text-gray-400 font-medium whitespace-nowrap">From</span>
+                                        <input
+                                            type="date"
+                                            className="text-sm outline-none text-gray-700 bg-transparent w-full"
+                                            value={startDate}
+                                            onChange={(e) => setStartDate(e.target.value)}
+                                        />
+                                    </div>
+                                    <span className="text-gray-400 hidden sm:block">→</span>
+                                    <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm w-full sm:w-auto">
+                                        <span className="text-xs text-gray-400 font-medium whitespace-nowrap">To</span>
+                                        <input
+                                            type="date"
+                                            className="text-sm outline-none text-gray-700 bg-transparent w-full"
+                                            value={endDate}
+                                            onChange={(e) => setEndDate(e.target.value)}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
 
                         {/* Summary Chips */}
-                        <div className="flex items-center gap-3 ml-auto text-sm">
-                            <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full font-medium">
+                        <div className="flex flex-wrap items-center gap-2 lg:ml-auto w-full lg:w-auto pt-2 lg:pt-0 border-t lg:border-t-0 border-gray-100">
+                            <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
                                 {totalDays} days
                             </span>
-                            <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full font-medium">
+                            <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium">
                                 {students.length} students
                             </span>
                         </div>
