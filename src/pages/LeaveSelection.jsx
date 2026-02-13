@@ -185,8 +185,10 @@ export default function LeaveSelection() {
                         <div className="flex gap-3 p-4 bg-amber-50 border border-amber-100 rounded-lg">
                             <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
                             <div>
-                                <p className="text-sm font-semibold text-amber-900">Today's Cutoff Passed</p>
-                                <p className="text-sm text-amber-700 mt-0.5">You can only apply for leave for tomorrow onwards.</p>
+                                <p className="text-sm font-semibold text-amber-900">Today's Cutoff Passed (8:00 PM)</p>
+                                <p className="text-sm text-amber-700 mt-0.5">
+                                    You can only apply for leave for <strong>day after tomorrow</strong> onwards.
+                                </p>
                             </div>
                         </div>
                     )}
