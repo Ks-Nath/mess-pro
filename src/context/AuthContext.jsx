@@ -6,6 +6,7 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     // Initialize state from localStorage on mount
     useEffect(() => {
@@ -18,6 +19,7 @@ export function AuthProvider({ children }) {
                 localStorage.removeItem('messArgUser');
             }
         }
+        setLoading(false);
     }, []);
 
     const login = async (username, password, role) => {
@@ -80,7 +82,7 @@ export function AuthProvider({ children }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
+        <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, loading }}>
             {children}
         </AuthContext.Provider>
     );
