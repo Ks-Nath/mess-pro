@@ -181,13 +181,23 @@ export default function LeaveSelection() {
 
                 {/* Calendar Card */}
                 <div className="lg:col-span-2 space-y-6">
-                    {isTodayCutoffPassed && (
+                    {isTodayCutoffPassed ? (
                         <div className="flex gap-3 p-4 bg-amber-50 border border-amber-100 rounded-lg">
                             <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
                             <div>
                                 <p className="text-sm font-semibold text-amber-900">Today's Cutoff Passed (8:00 PM)</p>
                                 <p className="text-sm text-amber-700 mt-0.5">
                                     You can only apply for leave for <strong>day after tomorrow</strong> onwards.
+                                </p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex gap-3 p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                            <Info className="w-5 h-5 text-blue-600 shrink-0" />
+                            <div>
+                                <p className="text-sm font-semibold text-blue-900">Advance Notice Required</p>
+                                <p className="text-sm text-blue-700 mt-0.5">
+                                    Same-day leave is not allowed. You can apply for leave from <strong>tomorrow</strong> onwards.
                                 </p>
                             </div>
                         </div>
