@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { mockAdmin } from '../data/mockData';
 
 const AuthContext = createContext(null);
 
@@ -24,19 +23,33 @@ export function AuthProvider({ children }) {
 
     const login = async (username, password, role) => {
         if (role === 'admin') {
-            // Admin: Credentials from environment variables (More secure than hardcoding)
-            const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
-            const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
+            try {
+                const { data, error } = await supabase
+                    .from('admins')
+                    .select('*')
+                    .eq('email', username)
+                    .eq('password', password) // Note: Production apps should use hashed passwords
+                    .single();
 
-            if (username === adminEmail && password === adminPassword) {
-                // Return mock admin profile (excluding sensitive fields if any)
-                const { password: _, ...adminData } = mockAdmin;
-                // Use the environment email to ensure it matches what was used to login
-                setUser({ ...adminData, email: adminEmail });
-                localStorage.setItem('messArgUser', JSON.stringify({ ...adminData, email: adminEmail }));
+                if (error || !data) {
+                    return { success: false, error: 'Invalid admin credentials' };
+                }
+
+                const adminUser = {
+                    id: data.id,
+                    name: data.name,
+                    email: data.email,
+                    role: 'admin',
+                    hostelId: data.hostel_id,
+                };
+
+                setUser(adminUser);
+                localStorage.setItem('messArgUser', JSON.stringify(adminUser));
                 return { success: true, role: 'admin' };
+            } catch (err) {
+                console.error("Admin login error:", err);
+                return { success: false, error: 'Admin login failed due to system error' };
             }
-            return { success: false, error: 'Invalid admin credentials' };
         }
 
         // Student: messNumber (case-insensitive) + phone
@@ -64,6 +77,7 @@ export function AuthProvider({ children }) {
                 messStatus: data.mess_status,
                 messType: data.mess_type,
                 joinDate: data.join_date,
+                hostelId: data.hostel_id,
             };
 
             setUser(studentUser);

@@ -1,36 +1,50 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { useAuth } from './AuthContext';
 
 const MenuContext = createContext(null);
 
 export function MenuProvider({ children }) {
     const [weeklyMenu, setWeeklyMenu] = useState({});
     const [loading, setLoading] = useState(true);
+    const { user } = useAuth();
 
     useEffect(() => {
-        fetchMenu();
+        if (user?.hostelId) {
+            fetchMenu();
 
-        const subscription = supabase
-            .channel('menu-channel')
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'weekly_menu' },
-                () => {
-                    fetchMenu();
-                }
-            )
-            .subscribe();
+            const subscription = supabase
+                .channel('menu-channel')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'weekly_menu',
+                        filter: `hostel_id=eq.${user.hostelId}`
+                    },
+                    () => {
+                        fetchMenu();
+                    }
+                )
+                .subscribe();
 
-        return () => {
-            supabase.removeChannel(subscription);
-        };
-    }, []);
+            return () => {
+                supabase.removeChannel(subscription);
+            };
+        } else {
+            setWeeklyMenu({});
+        }
+    }, [user?.hostelId]);
 
     const fetchMenu = async () => {
+        if (!user?.hostelId) return;
+
         try {
             const { data, error } = await supabase
                 .from('weekly_menu')
-                .select('*');
+                .select('*')
+                .eq('hostel_id', user.hostelId);
 
             if (error) throw error;
 
@@ -53,6 +67,8 @@ export function MenuProvider({ children }) {
     };
 
     const updateDayMenu = async (day, mealType, newItems) => {
+        if (!user?.hostelId) return { success: false, error: 'No hostel assigned' };
+
         // Optimistic update
         setWeeklyMenu(prev => ({
             ...prev,
@@ -63,15 +79,15 @@ export function MenuProvider({ children }) {
         }));
 
         // DB Update
-        // We need to update the specific column for the specific day row
         const { error } = await supabase
             .from('weekly_menu')
             .update({ [mealType]: newItems })
-            .eq('day_of_week', day);
+            .eq('day_of_week', day)
+            .eq('hostel_id', user.hostelId);
 
         if (error) {
             console.error('Error updating menu:', error);
-            // Revert would go here in robust app
+            fetchMenu(); // Revert
             return { success: false, error: error.message };
         }
         return { success: true };

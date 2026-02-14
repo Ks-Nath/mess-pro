@@ -1,36 +1,49 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { useAuth } from './AuthContext';
 
 const LeaveContext = createContext(null);
 
 export function LeaveProvider({ children }) {
     const [leaves, setLeaves] = useState({});
+    const { user } = useAuth();
 
     useEffect(() => {
-        fetchLeaves();
+        if (user?.hostelId) {
+            fetchLeaves();
 
-        const subscription = supabase
-            .channel('leaves-channel')
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'leaves' },
-                () => {
-                    // Refresh all leaves on any change for simplicity (or handle granularly)
-                    fetchLeaves();
-                }
-            )
-            .subscribe();
+            const subscription = supabase
+                .channel('leaves-channel')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'leaves',
+                        filter: `hostel_id=eq.${user.hostelId}`
+                    },
+                    () => {
+                        fetchLeaves();
+                    }
+                )
+                .subscribe();
 
-        return () => {
-            supabase.removeChannel(subscription);
-        };
-    }, []);
+            return () => {
+                supabase.removeChannel(subscription);
+            };
+        } else {
+            setLeaves({});
+        }
+    }, [user?.hostelId]);
 
     const fetchLeaves = async () => {
+        if (!user?.hostelId) return;
+
         const { data, error } = await supabase
             .from('leaves')
             .select('*')
-            .eq('status', 'Approved');
+            .eq('status', 'Approved')
+            .eq('hostel_id', user.hostelId);
 
         if (error) {
             console.error('Error fetching leaves:', error);
@@ -55,12 +68,12 @@ export function LeaveProvider({ children }) {
     };
 
     const isStudentOnLeave = (messNumber, date) => {
-        // date arg might be full ISO or just YYYY-MM-DD. Normalize to YYYY-MM-DD
         const shapeDate = date.includes('T') ? date.split('T')[0] : date;
         return leaves[shapeDate]?.includes(messNumber);
     };
 
     const addLeave = async (messNumber, date, studentId) => {
+        if (!user?.hostelId) return { success: false, error: 'No hostel assigned' };
         const shapeDate = date.includes('T') ? date.split('T')[0] : date;
 
         // CHECK IF ALREADY EXISTS (Local Check)
@@ -77,16 +90,22 @@ export function LeaveProvider({ children }) {
 
         let sid = studentId;
         if (!sid) {
-            const { data } = await supabase.from('students').select('id').eq('mess_number', messNumber).single();
+            const { data } = await supabase
+                .from('students')
+                .select('id')
+                .eq('mess_number', messNumber)
+                .eq('hostel_id', user.hostelId)
+                .single();
             if (data) sid = data.id;
         }
 
-        // Double check in DB to be strictly sure (prevents race conditions/duplicates)
+        // Double check in DB to be strictly sure
         const { data: existing } = await supabase
             .from('leaves')
             .select('id')
             .eq('mess_number', messNumber)
             .eq('leave_date', shapeDate)
+            .eq('hostel_id', user.hostelId)
             .maybeSingle();
 
         if (existing) {
@@ -97,17 +116,21 @@ export function LeaveProvider({ children }) {
             student_id: sid,
             mess_number: messNumber,
             leave_date: shapeDate,
-            status: 'Approved'
+            status: 'Approved',
+            hostel_id: user.hostelId
         }]);
 
         if (error) {
             console.error('Error adding leave:', error);
+            // Revert optimistic update
+            fetchLeaves();
             return { success: false, error: error.message };
         }
         return { success: true };
     };
 
     const removeLeave = async (messNumber, date) => {
+        if (!user?.hostelId) return { success: false, error: 'No hostel assigned' };
         const shapeDate = date.includes('T') ? date.split('T')[0] : date;
 
         setLeaves(prev => {
@@ -119,10 +142,12 @@ export function LeaveProvider({ children }) {
             .from('leaves')
             .delete()
             .eq('mess_number', messNumber)
-            .eq('leave_date', shapeDate);
+            .eq('leave_date', shapeDate)
+            .eq('hostel_id', user.hostelId);
 
         if (error) {
             console.error('Error removing leave:', error);
+            fetchLeaves();
             return { success: false, error: error.message };
         }
 

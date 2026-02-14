@@ -1,37 +1,53 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { useAuth } from './AuthContext';
 
 const StudentContext = createContext(null);
 
 export function StudentProvider({ children }) {
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { user } = useAuth();
 
     useEffect(() => {
-        fetchStudents();
+        if (user?.hostelId) {
+            fetchStudents();
 
-        // Real-time subscription for student changes
-        const subscription = supabase
-            .channel('students-channel')
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'students' },
-                () => {
-                    fetchStudents();
-                }
-            )
-            .subscribe();
+            // Real-time subscription for student changes
+            // Filter by hostel_id in subscription if possible, or just refresh
+            const subscription = supabase
+                .channel('students-channel')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'students',
+                        filter: `hostel_id=eq.${user.hostelId}`
+                    },
+                    () => {
+                        fetchStudents();
+                    }
+                )
+                .subscribe();
 
-        return () => {
-            supabase.removeChannel(subscription);
-        };
-    }, []);
+            return () => {
+                supabase.removeChannel(subscription);
+            };
+        } else {
+            setStudents([]);
+            setLoading(false);
+        }
+    }, [user?.hostelId]);
 
     const fetchStudents = async () => {
+        if (!user?.hostelId) return;
+
         try {
             const { data, error } = await supabase
                 .from('students')
                 .select('*')
+                .eq('hostel_id', user.hostelId)
                 .order('mess_number', { ascending: true });
 
             if (error) throw error;
@@ -47,6 +63,7 @@ export function StudentProvider({ children }) {
                 messStatus: s.mess_status,
                 messType: s.mess_type,
                 joinDate: s.join_date,
+                hostelId: s.hostel_id,
             }));
 
             setStudents(mapped);
@@ -58,6 +75,8 @@ export function StudentProvider({ children }) {
     };
 
     const addStudent = async (newStudent) => {
+        if (!user?.hostelId) return { success: false, error: 'No hostel assigned' };
+
         try {
             const { data, error } = await supabase
                 .from('students')
@@ -69,6 +88,7 @@ export function StudentProvider({ children }) {
                     mess_status: newStudent.messStatus || 'Active',
                     mess_type: newStudent.messType || 'Veg',
                     join_date: newStudent.joinDate || new Date().toISOString().slice(0, 10),
+                    hostel_id: user.hostelId,
                 }])
                 .select()
                 .single();
@@ -86,11 +106,14 @@ export function StudentProvider({ children }) {
     };
 
     const removeStudent = async (messNumber) => {
+        if (!user?.hostelId) return { success: false, error: 'No hostel assigned' };
+
         try {
             const { error } = await supabase
                 .from('students')
                 .delete()
-                .eq('mess_number', messNumber);
+                .eq('mess_number', messNumber)
+                .eq('hostel_id', user.hostelId);
 
             if (error) throw error;
 
