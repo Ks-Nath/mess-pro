@@ -64,7 +64,10 @@ export default function LeaveCalendar({
 
     const isDisabled = (day) => {
         if (isPastDate(day)) return true;
-        if (isToday(day) && isTodayCutoffPassed()) return true;
+
+        // RULE: Cannot apply for leave for today on today itself.
+        if (isToday(day)) return true;
+
         // CUTOFF RULE: If cutoff passed (8 PM), disable tomorrow as well.
         if (isTomorrow(day) && isTodayCutoffPassed()) return true;
 
@@ -75,7 +78,10 @@ export default function LeaveCalendar({
 
     const handleClick = (day) => {
         if (isPastDate(day)) return;
-        if (isToday(day) && isTodayCutoffPassed()) return;
+
+        // RULE: Cannot apply for leave for today
+        if (isToday(day)) return;
+
         if (isTomorrow(day) && isTodayCutoffPassed()) return;
 
         // Allow the toggle — LeaveSelection.jsx handles the cap toast
