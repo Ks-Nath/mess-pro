@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { X, LogOut, ChefHat } from 'lucide-react';
+import { X, LogOut, ChefHat, User } from 'lucide-react';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 

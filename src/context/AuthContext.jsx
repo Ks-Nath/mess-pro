@@ -52,18 +52,43 @@ export function AuthProvider({ children }) {
             }
         }
 
-        // Student: messNumber (case-insensitive) + phone
-        // Query Supabase for student
+        // Student: messNumber (case-insensitive) + (password OR phone)
         try {
+            // First, find the student by Mess Number alone
             const { data, error } = await supabase
                 .from('students')
                 .select('*')
-                .eq('mess_number', username.toUpperCase()) // stored as uppercase in DB typically, or case insensitive
-                .eq('phone', password)
+                .eq('mess_number', username.toUpperCase())
                 .single();
 
             if (error || !data) {
-                return { success: false, error: 'Invalid mess number or phone number' };
+                return { success: false, error: 'Invalid mess number' };
+            }
+
+            // OPTION 1 LOGIC:
+            // If student has a custom password set, they MUST use it. Phone will fail.
+            // If student has NO custom password set, they MUST use Phone.
+
+            let isValid = false;
+
+            if (data.password && data.password.trim() !== '') {
+                // Has custom password -> Validate against it
+                if (data.password === password) {
+                    isValid = true;
+                } else {
+                    return { success: false, error: 'Invalid password (custom password is set)' };
+                }
+            } else {
+                // No custom password -> Validate against phone
+                if (data.phone === password) {
+                    isValid = true;
+                } else {
+                    return { success: false, error: 'Invalid phone number (default password)' };
+                }
+            }
+
+            if (!isValid) {
+                return { success: false, error: 'Invalid credentials' };
             }
 
             // Map DB to User object
@@ -78,6 +103,7 @@ export function AuthProvider({ children }) {
                 messType: data.mess_type,
                 joinDate: data.join_date,
                 hostelId: data.hostel_id,
+                hasCustomPassword: !!(data.password && data.password.trim() !== '') // Helper flag
             };
 
             setUser(studentUser);

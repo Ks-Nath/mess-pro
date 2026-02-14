@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import MessMenu from './pages/MessMenu';
 import LeaveSelection from './pages/LeaveSelection';
 import MessBill from './pages/MessBill';
+import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
 import ManageMenu from './pages/ManageMenu';
 import ManageStudents from './pages/ManageStudents';
@@ -32,6 +33,7 @@ export default function App() {
                 <Route path="menu" element={<MessMenu />} />
                 <Route path="leave" element={<LeaveSelection />} />
                 <Route path="bill" element={<MessBill />} />
+                <Route path="profile" element={<Profile />} />
             </Route>
 
             {/* Admin Routes */}
