@@ -22,35 +22,59 @@ export default function ManageLeaves() {
 
     const leavesForDate = getLeavesByDate(formatDateKey(selectedDate));
 
-    const handleGrantLeave = () => {
+    const handleGrantLeave = async () => {
         if (!overrideMessNumber) {
             toast.error('Please select a student');
             return;
         }
 
-        const selectedStudent = students.find(s => s.messNumber === overrideMessNumber);
-
-        if (!selectedStudent) {
-            toast.error('Student not found');
-            return;
-        }
-
         const dateKey = formatDateKey(overrideDate);
-        // Pass messNumber, date, AND studentId for DB update
-        addLeave(overrideMessNumber, dateKey, selectedStudent.id);
 
-        toast.success(`Leave granted for ${overrideMessNumber} on ${dateKey}`);
+        if (overrideMessNumber === 'ALL') {
+            const activeStudents = students.filter(s => s.messStatus === 'Active');
+            if (!window.confirm(`Are you sure you want to GRANT leave for ALL ${activeStudents.length} active students for ${dateKey}?`)) return;
+
+            toast.loading('Granting leaves...', { id: 'bulk-grant' });
+            let count = 0;
+            for (const student of activeStudents) {
+                await addLeave(student.messNumber, dateKey, student.id);
+                count++;
+            }
+            toast.success(`Leave granted for all ${count} students`, { id: 'bulk-grant' });
+        } else {
+            const selectedStudent = students.find(s => s.messNumber === overrideMessNumber);
+            if (!selectedStudent) {
+                toast.error('Student not found');
+                return;
+            }
+            addLeave(overrideMessNumber, dateKey, selectedStudent.id);
+            toast.success(`Leave granted for ${overrideMessNumber} on ${dateKey}`);
+        }
         setOverrideMessNumber('');
     };
 
-    const handleCancelLeave = () => {
+    const handleCancelLeave = async () => {
         if (!overrideMessNumber) {
             toast.error('Please select a student');
             return;
         }
         const dateKey = formatDateKey(overrideDate);
-        removeLeave(overrideMessNumber, dateKey);
-        toast.success(`Leave cancelled for ${overrideMessNumber} on ${dateKey}`);
+
+        if (overrideMessNumber === 'ALL') {
+            const activeStudents = students.filter(s => s.messStatus === 'Active');
+            if (!window.confirm(`Are you sure you want to CANCEL leave for ALL ${activeStudents.length} active students for ${dateKey}?`)) return;
+
+            toast.loading('Cancelling leaves...', { id: 'bulk-cancel' });
+            let count = 0;
+            for (const student of activeStudents) {
+                await removeLeave(student.messNumber, dateKey);
+                count++;
+            }
+            toast.success(`Leave cancelled for all ${count} students`, { id: 'bulk-cancel' });
+        } else {
+            removeLeave(overrideMessNumber, dateKey);
+            toast.success(`Leave cancelled for ${overrideMessNumber} on ${dateKey}`);
+        }
         setOverrideMessNumber('');
     };
 
@@ -148,6 +172,7 @@ export default function ManageLeaves() {
                                     onChange={(e) => setOverrideMessNumber(e.target.value)}
                                 >
                                     <option value="" disabled>Select student...</option>
+                                    <option value="ALL" className="font-bold text-blue-600">SELECT ALL</option>
                                     {students.map(student => (
                                         <option key={student.id} value={student.messNumber}>
                                             {student.name} ({student.messNumber})
