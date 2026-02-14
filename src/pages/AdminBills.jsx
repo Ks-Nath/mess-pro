@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLeaves } from '../context/LeaveContext';
 import { useStudents } from '../context/StudentContext';
-import { billConfig } from '../data/mockData';
+import { useHostel } from '../context/HostelContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Download, Calendar, CalendarRange, FileSpreadsheet } from 'lucide-react';
@@ -12,6 +12,7 @@ import { saveAs } from 'file-saver';
 export default function AdminBills() {
     const { students } = useStudents();
     const { getLeavesByDate } = useLeaves();
+    const { messRate } = useHostel();
 
     // Mode: 'month' or 'range'
     const [mode, setMode] = useState('month');
@@ -62,7 +63,7 @@ export default function AdminBills() {
         });
 
         const billableDays = totalDays - leaveCount;
-        const totalBill = billableDays * billConfig.costPerDay;
+        const totalBill = billableDays * messRate;
 
         return {
             ...student,
@@ -312,7 +313,7 @@ export default function AdminBills() {
                 <CardHeader className="bg-gray-50/50 border-b border-gray-100">
                     <CardTitle className="text-lg">Bill Summary — {periodLabel}</CardTitle>
                     <CardDescription>
-                        Rate: ₹{billConfig.costPerDay}/day
+                        Rate: ₹{messRate}/day
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">

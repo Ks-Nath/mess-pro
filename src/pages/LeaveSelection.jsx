@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import LeaveCalendar from '../components/LeaveCalendar';
-import { MAX_LEAVES_PER_MONTH, LEAVE_CUTOFF_HOUR } from '../data/mockData';
+import { MAX_LEAVES_PER_MONTH } from '../data/mockData';
 import { CalendarOff, Clock, Save, AlertTriangle, X, Info } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { useLeaves } from '../context/LeaveContext';
 import { useAuth } from '../context/AuthContext';
+import { useHostel } from '../context/HostelContext';
 
 export default function LeaveSelection() {
     const { user } = useAuth();
     const { getLeavesByDate, addLeave, removeLeave, leaves } = useLeaves();
+    const { cutoffTime } = useHostel();
 
     const [today, setToday] = useState(new Date());
     const [currentMonth, setCurrentMonth] = useState(today.getMonth());
@@ -50,7 +52,7 @@ export default function LeaveSelection() {
         setSelectedDates(myLeaves);
     }, [leaves, user]);
 
-    const isTodayCutoffPassed = today.getHours() >= LEAVE_CUTOFF_HOUR;
+    const isTodayCutoffPassed = today.getHours() >= cutoffTime;
 
     // Count leaves selected in the currently viewed month
     const leavesThisMonth = selectedDates.filter((dateStr) => {
@@ -74,7 +76,7 @@ export default function LeaveSelection() {
             tomorrow.setHours(0, 0, 0, 0);
 
             const isTomorrow = dateObj.getTime() === tomorrow.getTime();
-            const isTodayPassed = now.getHours() >= LEAVE_CUTOFF_HOUR;
+            const isTodayPassed = now.getHours() >= cutoffTime;
 
             if (isTomorrow && isTodayPassed) {
                 toast.error(`Cutoff reached (8 PM). You can only apply for leave from day after tomorrow.`, {
@@ -154,7 +156,7 @@ export default function LeaveSelection() {
             const tomorrow = new Date(now);
             tomorrow.setDate(tomorrow.getDate() + 1);
             tomorrow.setHours(0, 0, 0, 0);
-            const isTodayPassed = now.getHours() >= LEAVE_CUTOFF_HOUR;
+            const isTodayPassed = now.getHours() >= cutoffTime;
 
             for (const date of toAdd) {
                 const dateObj = new Date(date + 'T00:00:00');
@@ -215,7 +217,7 @@ export default function LeaveSelection() {
 
                 <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200">
                     <Clock className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700">Cutoff: 8:00 PM daily</span>
+                    <span className="text-sm font-medium text-gray-700">Cutoff: {cutoffTime > 12 ? cutoffTime - 12 : cutoffTime}:00 {cutoffTime >= 12 ? 'PM' : 'AM'} daily</span>
                 </div>
             </div>
 
@@ -227,7 +229,7 @@ export default function LeaveSelection() {
                         <div className="flex gap-3 p-4 bg-amber-50 border border-amber-100 rounded-lg">
                             <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
                             <div>
-                                <p className="text-sm font-semibold text-amber-900">Today's Cutoff Passed (8:00 PM)</p>
+                                <p className="text-sm font-semibold text-amber-900">Today's Cutoff Passed ({cutoffTime > 12 ? cutoffTime - 12 : cutoffTime}:00 {cutoffTime >= 12 ? 'PM' : 'AM'})</p>
                                 <p className="text-sm text-amber-700 mt-0.5">
                                     You can only apply for leave for <strong>day after tomorrow</strong> onwards.
                                 </p>
@@ -281,6 +283,7 @@ export default function LeaveSelection() {
                             maxLeaves={MAX_LEAVES_PER_MONTH}
                             leavesUsedThisMonth={leavesThisMonth}
                             today={today}
+                            cutoffTime={cutoffTime}
                         />
                     </Card>
                 </div>

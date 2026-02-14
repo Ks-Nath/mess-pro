@@ -7,7 +7,8 @@ import {
     LogOut,
     ChefHat,
     Bell,
-    FileSpreadsheet
+    FileSpreadsheet,
+    Settings
 } from 'lucide-react';
 import { Separator } from './ui/separator';
 
@@ -17,6 +18,7 @@ const navItems = [
     { to: '/admin/students', label: 'Students', icon: Users },
     { to: '/admin/leaves', label: 'Leave Reports', icon: Bell },
     { to: '/admin/bills', label: 'Finance', icon: FileSpreadsheet },
+    { to: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
 export default function AdminSidebar() {

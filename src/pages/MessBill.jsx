@@ -1,6 +1,6 @@
 import { useAuth } from '../context/AuthContext';
 import { useLeaves } from '../context/LeaveContext';
-import { billConfig } from '../data/mockData'; // Keeping billConfig for costPerDay, but logic will be dynamic
+import { useHostel } from '../context/HostelContext';
 import { Receipt, Calendar, Minus, CheckCircle2, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -9,6 +9,7 @@ import { Separator } from '../components/ui/separator';
 export default function MessBill() {
     const { user } = useAuth();
     const { getLeavesByDate } = useLeaves();
+    const { messRate } = useHostel();
 
     if (!user) return <div className="p-8 text-center">Please log in to view bill.</div>;
 
@@ -31,8 +32,8 @@ export default function MessBill() {
     }
 
     const activeDays = daysInMonth - leaveCount;
-    const totalAmount = activeDays * billConfig.costPerDay;
-    const savings = leaveCount * billConfig.costPerDay;
+    const totalAmount = activeDays * messRate;
+    const savings = leaveCount * messRate;
 
     const monthName = now.toLocaleString('default', { month: 'long' });
 
@@ -89,7 +90,7 @@ export default function MessBill() {
 
                         <div className="grid grid-cols-2 p-4 sm:px-6 hover:bg-gray-50/30 transition-colors">
                             <span className="text-sm text-gray-500">Cost per day</span>
-                            <span className="text-sm font-medium text-gray-900 text-right">₹{billConfig.costPerDay}</span>
+                            <span className="text-sm font-medium text-gray-900 text-right">₹{messRate}</span>
                         </div>
                     </div>
 
@@ -98,7 +99,7 @@ export default function MessBill() {
                     {/* Calculation Footer */}
                     <div className="bg-gray-50/30 p-4 sm:px-6 text-center">
                         <p className="text-xs text-gray-400 font-mono">
-                            ({daysInMonth} Total − {leaveCount} Leave) × ₹{billConfig.costPerDay} = ₹{totalAmount.toLocaleString()}
+                            ({daysInMonth} Total − {leaveCount} Leave) × ₹{messRate} = ₹{totalAmount.toLocaleString()}
                         </p>
                         {savings > 0 && (
                             <p className="text-xs text-emerald-600 font-medium mt-1">
