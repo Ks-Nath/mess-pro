@@ -54,56 +54,70 @@ export function AuthProvider({ children }) {
 
         // Student: messNumber (case-insensitive) + (password OR phone)
         try {
-            // First, find the student by Mess Number alone
-            const { data, error } = await supabase
+            // Fetch ALL students with this mess number (in case of duplicates across hostels)
+            const { data: students, error } = await supabase
                 .from('students')
                 .select('*')
-                .eq('mess_number', username.toUpperCase())
-                .single();
+                .eq('mess_number', username.toUpperCase());
 
-            if (error || !data) {
+            if (error || !students || students.length === 0) {
                 return { success: false, error: 'Invalid mess number' };
             }
 
-            // OPTION 1 LOGIC:
-            // If student has a custom password set, they MUST use it. Phone will fail.
-            // If student has NO custom password set, they MUST use Phone.
+            // Iterate through all found students to see if credentials match ANY of them
+            let validStudent = null;
+            let failureReason = 'Invalid credentials';
 
-            let isValid = false;
+            for (const student of students) {
+                let isMatch = false;
 
-            if (data.password && data.password.trim() !== '') {
-                // Has custom password -> Validate against it
-                if (data.password === password) {
-                    isValid = true;
+                if (student.password && student.password.trim() !== '') {
+                    // Has custom password -> Must match
+                    if (student.password === password) {
+                        isMatch = true;
+                    }
                 } else {
-                    return { success: false, error: 'Invalid password (custom password is set)' };
+                    // No custom password -> Check phone
+                    if (student.phone === password) {
+                        isMatch = true;
+                    }
                 }
-            } else {
-                // No custom password -> Validate against phone
-                if (data.phone === password) {
-                    isValid = true;
-                } else {
-                    return { success: false, error: 'Invalid phone number (default password)' };
+
+                if (isMatch) {
+                    validStudent = student;
+                    break; // Found the correct user, stop checking
                 }
             }
 
-            if (!isValid) {
+            if (!validStudent) {
+                // If we found students but none matched credentials
+                // If there was only one student found and it failed, we can be more specific,
+                // but for security it's often better to just say "Invalid credentials"
+                // However to match previous behavior for single users we can try:
+                if (students.length === 1) {
+                    const s = students[0];
+                    if (s.password && s.password.trim() !== '') {
+                        return { success: false, error: 'Invalid password (custom password is set)' };
+                    } else {
+                        return { success: false, error: 'Invalid phone number (default password)' };
+                    }
+                }
                 return { success: false, error: 'Invalid credentials' };
             }
 
             // Map DB to User object
             const studentUser = {
-                id: data.id,
-                name: data.name,
-                messNumber: data.mess_number,
-                phone: data.phone,
+                id: validStudent.id,
+                name: validStudent.name,
+                messNumber: validStudent.mess_number,
+                phone: validStudent.phone,
                 role: 'user',
-                roomNo: data.room_no,
-                messStatus: data.mess_status,
-                messType: data.mess_type,
-                joinDate: data.join_date,
-                hostelId: data.hostel_id,
-                hasCustomPassword: !!(data.password && data.password.trim() !== '') // Helper flag
+                roomNo: validStudent.room_no,
+                messStatus: validStudent.mess_status,
+                messType: validStudent.mess_type,
+                joinDate: validStudent.join_date,
+                hostelId: validStudent.hostel_id,
+                hasCustomPassword: !!(validStudent.password && validStudent.password.trim() !== '') // Helper flag
             };
 
             setUser(studentUser);

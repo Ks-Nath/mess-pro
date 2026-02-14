@@ -66,6 +66,11 @@ export function StudentProvider({ children }) {
                 hostelId: s.hostel_id,
             }));
 
+            // Natural sort by mess number (handles "1", "2", "10" vs "1", "10", "2")
+            mapped.sort((a, b) => {
+                return a.messNumber.localeCompare(b.messNumber, undefined, { numeric: true, sensitivity: 'base' });
+            });
+
             setStudents(mapped);
         } catch (error) {
             console.error('Error fetching students:', error);
