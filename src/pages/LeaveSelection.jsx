@@ -13,9 +13,17 @@ export default function LeaveSelection() {
     const { user } = useAuth();
     const { getLeavesByDate, addLeave, removeLeave, leaves } = useLeaves();
 
-    const today = new Date();
+    const [today, setToday] = useState(new Date());
     const [currentMonth, setCurrentMonth] = useState(today.getMonth());
     const [currentYear, setCurrentYear] = useState(today.getFullYear());
+
+    // Update "today" every minute to ensure cutoff logic is always fresh
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setToday(new Date());
+        }, 60000); // 1 minute
+        return () => clearInterval(interval);
+    }, []);
 
     // Derived state from Context (Real-time)
     // We need to scan all leaves to find ones for this user, OR efficient lookup if context supported it.
@@ -57,19 +65,39 @@ export default function LeaveSelection() {
         setPendingChanges(true); // Enable save button
         const isRemoving = selectedDates.includes(dateStr);
 
-        if (!isRemoving && isCapReached) {
-            // Check if the date being added belongs to the viewed month
-            const d = new Date(dateStr + 'T00:00:00');
-            if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
-                toast.error(`Maximum ${MAX_LEAVES_PER_MONTH} leave days reached for this month`, {
+        if (!isRemoving) {
+            // Cutoff check
+            const dateObj = new Date(dateStr + 'T00:00:00');
+            const now = new Date();
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+
+            const isTomorrow = dateObj.getTime() === tomorrow.getTime();
+            const isTodayPassed = now.getHours() >= LEAVE_CUTOFF_HOUR;
+
+            if (isTomorrow && isTodayPassed) {
+                toast.error(`Cutoff reached (8 PM). You can only apply for leave from day after tomorrow.`, {
                     position: 'bottom-center',
-                    style: {
-                        borderRadius: '8px',
-                        background: '#1f2937',
-                        color: '#fff',
-                    },
+                    style: { borderRadius: '8px', background: '#1f2937', color: '#fff' },
                 });
                 return;
+            }
+
+            if (isCapReached) {
+                // Check if the date being added belongs to the viewed month
+                const d = new Date(dateStr + 'T00:00:00');
+                if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+                    toast.error(`Maximum ${MAX_LEAVES_PER_MONTH} leave days reached for this month`, {
+                        position: 'bottom-center',
+                        style: {
+                            borderRadius: '8px',
+                            background: '#1f2937',
+                            color: '#fff',
+                        },
+                    });
+                    return;
+                }
             }
         }
 
@@ -121,6 +149,20 @@ export default function LeaveSelection() {
         toast.loading('Saving changes...', { id: 'saving' });
 
         try {
+            // Final validation check for additions (Real-time cutoff enforcement)
+            const now = new Date();
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+            const isTodayPassed = now.getHours() >= LEAVE_CUTOFF_HOUR;
+
+            for (const date of toAdd) {
+                const dateObj = new Date(date + 'T00:00:00');
+                if (dateObj.getTime() === tomorrow.getTime() && isTodayPassed) {
+                    throw new Error(`Cutoff passed for ${date}. Please refresh or adjust your selection.`);
+                }
+            }
+
             // Process Additions
             for (const date of toAdd) {
                 await addLeave(user.messNumber, date, user.id);
@@ -135,7 +177,7 @@ export default function LeaveSelection() {
             setPendingChanges(false);
         } catch (error) {
             console.error(error);
-            toast.error('Failed to save changes', { id: 'saving' });
+            toast.error(error.message || 'Failed to save changes', { id: 'saving' });
         }
     };
 
@@ -238,6 +280,7 @@ export default function LeaveSelection() {
                             onNextMonth={handleNextMonth}
                             maxLeaves={MAX_LEAVES_PER_MONTH}
                             leavesUsedThisMonth={leavesThisMonth}
+                            today={today}
                         />
                     </Card>
                 </div>

@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from './ui/button';
+import { LEAVE_CUTOFF_HOUR } from '../data/mockData';
 
 export default function LeaveCalendar({
     currentMonth,
@@ -11,8 +12,9 @@ export default function LeaveCalendar({
     onNextMonth,
     maxLeaves,
     leavesUsedThisMonth,
+    today,
 }) {
-    const today = new Date();
+    // const today = new Date(); // Using today from props
     const monthNames = [
         'January', 'February', 'March', 'April', 'May', 'June',
         'July', 'August', 'September', 'October', 'November', 'December',
@@ -51,7 +53,7 @@ export default function LeaveCalendar({
     };
 
     const isTodayCutoffPassed = () => {
-        return today.getHours() >= 20;
+        return today.getHours() >= LEAVE_CUTOFF_HOUR;
     };
 
     const getDateStr = (day) => {
