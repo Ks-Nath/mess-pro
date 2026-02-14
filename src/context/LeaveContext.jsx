@@ -42,7 +42,10 @@ export function LeaveProvider({ children }) {
         data.forEach(record => {
             const d = record.leave_date; // YYYY-MM-DD
             if (!leavesMap[d]) leavesMap[d] = [];
-            leavesMap[d].push(record.mess_number);
+            // ENSURE UNIQUENESS: Only push if not already present
+            if (!leavesMap[d].includes(record.mess_number)) {
+                leavesMap[d].push(record.mess_number);
+            }
         });
         setLeaves(leavesMap);
     };
@@ -60,6 +63,11 @@ export function LeaveProvider({ children }) {
     const addLeave = async (messNumber, date, studentId) => {
         const shapeDate = date.includes('T') ? date.split('T')[0] : date;
 
+        // CHECK IF ALREADY EXISTS (Local Check)
+        if (leaves[shapeDate]?.includes(messNumber)) {
+            return { success: true, alreadyExists: true };
+        }
+
         // Optimistic update
         setLeaves(prev => {
             const current = prev[shapeDate] || [];
@@ -67,14 +75,22 @@ export function LeaveProvider({ children }) {
             return { ...prev, [shapeDate]: [...current, messNumber] };
         });
 
-        // If studentId is not passed (legacy calls), we need to fetch it or rely on triggering from a context that has it.
-        // For now, let's assume valid calls pass studentId or we look it up (expensive).
-        // Since we are adding DB integration, let's require studentId or fetch it efficiently.
-        // Fallback: look up student ID by messNumber if not provided
         let sid = studentId;
         if (!sid) {
             const { data } = await supabase.from('students').select('id').eq('mess_number', messNumber).single();
             if (data) sid = data.id;
+        }
+
+        // Double check in DB to be strictly sure (prevents race conditions/duplicates)
+        const { data: existing } = await supabase
+            .from('leaves')
+            .select('id')
+            .eq('mess_number', messNumber)
+            .eq('leave_date', shapeDate)
+            .maybeSingle();
+
+        if (existing) {
+            return { success: true, alreadyExists: true };
         }
 
         const { error } = await supabase.from('leaves').insert([{
@@ -86,8 +102,6 @@ export function LeaveProvider({ children }) {
 
         if (error) {
             console.error('Error adding leave:', error);
-            // Revert optimistic update? For now, we'll let the realtime subscription fix it or simple error fetch.
-            // A production app would revert the state here.
             return { success: false, error: error.message };
         }
         return { success: true };
