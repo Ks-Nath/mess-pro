@@ -10,11 +10,12 @@ export function StudentProvider({ children }) {
     const { user } = useAuth();
 
     useEffect(() => {
-        if (user?.hostelId) {
+        // ONLY fetch students if the user is an ADMIN.
+        // Regular students do not need the full registry.
+        if (user?.hostelId && user?.role === 'admin') {
             fetchStudents();
 
             // Real-time subscription for student changes
-            // Filter by hostel_id in subscription if possible, or just refresh
             const subscription = supabase
                 .channel('students-channel')
                 .on(
@@ -38,10 +39,10 @@ export function StudentProvider({ children }) {
             setStudents([]);
             setLoading(false);
         }
-    }, [user?.hostelId]);
+    }, [user?.hostelId, user?.role]);
 
     const fetchStudents = async () => {
-        if (!user?.hostelId) return;
+        if (!user?.hostelId || user?.role !== 'admin') return;
 
         try {
             const { data, error } = await supabase

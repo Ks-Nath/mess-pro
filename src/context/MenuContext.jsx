@@ -13,25 +13,28 @@ export function MenuProvider({ children }) {
         if (user?.hostelId) {
             fetchMenu();
 
-            const subscription = supabase
-                .channel('menu-channel')
-                .on(
-                    'postgres_changes',
-                    {
-                        event: '*',
-                        schema: 'public',
-                        table: 'weekly_menu',
-                        filter: `hostel_id=eq.${user.hostelId}`
-                    },
-                    () => {
-                        fetchMenu();
-                    }
-                )
-                .subscribe();
+            // ONLY Admins get real-time updates for menu
+            if (user.role === 'admin') {
+                const subscription = supabase
+                    .channel('menu-channel')
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: '*',
+                            schema: 'public',
+                            table: 'weekly_menu',
+                            filter: `hostel_id=eq.${user.hostelId}`
+                        },
+                        () => {
+                            fetchMenu();
+                        }
+                    )
+                    .subscribe();
 
-            return () => {
-                supabase.removeChannel(subscription);
-            };
+                return () => {
+                    supabase.removeChannel(subscription);
+                };
+            }
         } else {
             setWeeklyMenu({});
         }

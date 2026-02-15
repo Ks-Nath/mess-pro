@@ -12,38 +12,48 @@ export function LeaveProvider({ children }) {
         if (user?.hostelId) {
             fetchLeaves();
 
-            const subscription = supabase
-                .channel('leaves-channel')
-                .on(
-                    'postgres_changes',
-                    {
-                        event: '*',
-                        schema: 'public',
-                        table: 'leaves',
-                        filter: `hostel_id=eq.${user.hostelId}`
-                    },
-                    () => {
-                        fetchLeaves();
-                    }
-                )
-                .subscribe();
+            // ONLY Admins get real-time updates for leaves
+            if (user.role === 'admin') {
+                const subscription = supabase
+                    .channel('leaves-channel')
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: '*',
+                            schema: 'public',
+                            table: 'leaves',
+                            filter: `hostel_id=eq.${user.hostelId}`
+                        },
+                        () => {
+                            fetchLeaves();
+                        }
+                    )
+                    .subscribe();
 
-            return () => {
-                supabase.removeChannel(subscription);
-            };
+                return () => {
+                    supabase.removeChannel(subscription);
+                };
+            }
         } else {
             setLeaves({});
         }
-    }, [user?.hostelId]);
+    }, [user?.hostelId, user?.role]);
 
     const fetchLeaves = async () => {
         if (!user?.hostelId) return;
 
-        const { data, error } = await supabase
+        let query = supabase
             .from('leaves')
             .select('leave_date, mess_number, is_admin_granted')
             .eq('status', 'Approved')
             .eq('hostel_id', user.hostelId);
+
+        // If STUDENT, only fetch OWN leaves
+        if (user.role !== 'admin' && user.messNumber) {
+            query = query.eq('mess_number', user.messNumber);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
             console.error('Error fetching leaves:', error);
