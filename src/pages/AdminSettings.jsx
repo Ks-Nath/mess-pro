@@ -45,7 +45,7 @@ export default function AdminSettings() {
 
         try {
             // Fetch data from main tables
-            const tables = ['students', 'leaves', 'mess_menu', 'grocery_stock', 'bills'];
+            const tables = ['students', 'leaves', 'weekly_menu', 'bills'];
             const backupData = {
                 timestamp: new Date().toISOString(),
                 hostelName,
