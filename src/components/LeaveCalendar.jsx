@@ -138,10 +138,10 @@ export default function LeaveCalendar({
                     <div key={`blank-${i}`} className="aspect-square"></div>
                 ))}
                 {daysArr.map((day) => {
-                    const disabled = isDisabled(day);
                     const info = getLeaveInfo(day);
+                    const disabled = isDisabled(day);
                     const selected = !!info;
-                    const adminGranted = info?.isAdminGranted;
+                    const adminGranted = Boolean(info?.isAdminGranted);
                     const todayDate = isToday(day);
                     const cappedOut = isCapReached && !selected && !isPastDate(day) && !(isToday(day) && isTodayCutoffPassed());
 
@@ -153,7 +153,7 @@ export default function LeaveCalendar({
                             className={cn(
                                 "aspect-square rounded-lg text-sm font-medium relative transition-all duration-200 border border-transparent",
                                 adminGranted
-                                    ? "bg-purple-600 text-white shadow-sm cursor-not-allowed opacity-90"
+                                    ? "bg-admin-purple text-white shadow-sm cursor-not-allowed opacity-90"
                                     : selected
                                         ? "bg-red-500 text-white shadow-sm hover:bg-red-600"
                                         : todayDate
@@ -181,7 +181,7 @@ export default function LeaveCalendar({
                     <span className="text-xs text-gray-500 font-medium">Your Leave</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-purple-600"></div>
+                    <div className="w-3 h-3 rounded bg-admin-purple"></div>
                     <span className="text-xs text-gray-500 font-medium">Admin Granted</span>
                 </div>
                 <div className="flex items-center gap-2">

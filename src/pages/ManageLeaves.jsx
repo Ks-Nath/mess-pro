@@ -47,7 +47,7 @@ export default function ManageLeaves() {
                 toast.error('Student not found');
                 return;
             }
-            addLeave(overrideMessNumber, dateKey, selectedStudent.id, true);
+            await addLeave(overrideMessNumber, dateKey, selectedStudent.id, true);
             toast.success(`Leave granted for ${overrideMessNumber} on ${dateKey}`);
         }
         setOverrideMessNumber('');
@@ -124,19 +124,25 @@ export default function ManageLeaves() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-100">
-                                            {leavesForDate.map(messNo => {
+                                            {leavesForDate.map(leaf => {
+                                                const messNo = leaf.messNumber;
                                                 const student = students.find(s => s.messNumber === messNo);
                                                 return (
                                                     <tr key={messNo} className="hover:bg-gray-50">
-                                                        <td className="px-4 py-3 font-medium">{messNo}</td>
+                                                        <td className="px-4 py-3 font-medium flex items-center gap-2">
+                                                            {messNo}
+                                                            {leaf.isAdminGranted && (
+                                                                <span className="w-2 h-2 rounded-full bg-admin-purple" title="Admin Granted"></span>
+                                                            )}
+                                                        </td>
                                                         <td className="px-4 py-3">{student ? student.name : 'Unknown'}</td>
                                                         <td className="px-4 py-3 hidden md:table-cell">{student ? student.phone : '-'}</td>
                                                         <td className="px-4 py-3 text-right">
                                                             <Button
                                                                 variant="destructive"
                                                                 size="sm"
-                                                                onClick={() => {
-                                                                    removeLeave(messNo, formatDateKey(selectedDate));
+                                                                onClick={async () => {
+                                                                    await removeLeave(messNo, formatDateKey(selectedDate));
                                                                     toast.success('Leave cancelled');
                                                                 }}
                                                             >
