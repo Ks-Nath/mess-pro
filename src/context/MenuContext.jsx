@@ -40,6 +40,14 @@ export function MenuProvider({ children }) {
     const fetchMenu = async () => {
         if (!user?.hostelId) return;
 
+        // 1. Try to load from LocalStorage first
+        const cached = localStorage.getItem(`menu_${user.hostelId}`);
+        if (cached) {
+            setWeeklyMenu(JSON.parse(cached));
+            setLoading(false);
+            // We can optionally fetch in background to validity check, but for now we trust cache + realtime
+        }
+
         try {
             const { data, error } = await supabase
                 .from('weekly_menu')
@@ -58,7 +66,10 @@ export function MenuProvider({ children }) {
                     dinner: item.dinner || []
                 };
             });
+
             setWeeklyMenu(menuMap);
+            localStorage.setItem(`menu_${user.hostelId}`, JSON.stringify(menuMap));
+
         } catch (error) {
             console.error('Error fetching menu:', error);
         } finally {
@@ -70,13 +81,18 @@ export function MenuProvider({ children }) {
         if (!user?.hostelId) return { success: false, error: 'No hostel assigned' };
 
         // Optimistic update
-        setWeeklyMenu(prev => ({
-            ...prev,
-            [day]: {
-                ...prev[day],
-                [mealType]: newItems
-            }
-        }));
+        setWeeklyMenu(prev => {
+            const updated = {
+                ...prev,
+                [day]: {
+                    ...prev[day],
+                    [mealType]: newItems
+                }
+            };
+            // Update LocalStorage immediately
+            localStorage.setItem(`menu_${user.hostelId}`, JSON.stringify(updated));
+            return updated;
+        });
 
         // DB Update
         const { error } = await supabase
