@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useHostel } from '../context/HostelContext';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
-import { Save, Settings } from 'lucide-react';
+import { Save, Settings, DatabaseBackup, Download } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+import { supabase } from '../lib/supabaseClient';
 
 export default function AdminSettings() {
     const { messRate, cutoffTime, hostelName, updateSettings, loading } = useHostel();
@@ -11,6 +12,7 @@ export default function AdminSettings() {
     const [rate, setRate] = useState(messRate);
     const [cutoff, setCutoff] = useState(cutoffTime);
     const [isSaving, setIsSaving] = useState(false);
+    const [isBackingUp, setIsBackingUp] = useState(false);
 
     // Sync state when context loads
     useEffect(() => {
@@ -33,6 +35,47 @@ export default function AdminSettings() {
             toast.error('Failed to update settings: ' + result.error);
         }
         setIsSaving(false);
+    };
+
+    const handleBackup = async () => {
+        if (!confirm('Download a full backup of your data?')) return;
+
+        setIsBackingUp(true);
+        const toastId = toast.loading('Generating backup...');
+
+        try {
+            // Fetch data from main tables
+            const tables = ['students', 'leaves', 'mess_menu', 'grocery_stock', 'bills'];
+            const backupData = {
+                timestamp: new Date().toISOString(),
+                hostelName,
+                data: {}
+            };
+
+            for (const table of tables) {
+                const { data, error } = await supabase.from(table).select('*');
+                if (error) throw error;
+                backupData.data[table] = data;
+            }
+
+            // Create and download file
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mess_backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            toast.success('Backup downloaded successfully', { id: toastId });
+        } catch (error) {
+            console.error('Backup error:', error);
+            toast.error('Backup failed: ' + error.message, { id: toastId });
+        } finally {
+            setIsBackingUp(false);
+        }
     };
 
     if (loading) return <div className="p-8">Loading settings...</div>;
@@ -114,6 +157,40 @@ export default function AdminSettings() {
                             </Button>
                         </div>
                     </form>
+                </CardContent>
+            </Card>
+
+            {/* Data Backup Section */}
+            <Card className="border-gray-200 shadow-sm overflow-hidden">
+                <CardHeader className="bg-gray-50/50 border-b border-gray-100 p-6">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                            <DatabaseBackup className="w-4 h-4 text-emerald-600" />
+                        </div>
+                        <div>
+                            <CardTitle className="text-lg">Data Backup</CardTitle>
+                            <CardDescription className="mt-0.5">Download a complete copy of your data for safekeeping.</CardDescription>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent className="p-6 pt-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                            <h4 className="font-medium text-gray-900">Export All Data</h4>
+                            <p className="text-sm text-gray-500 max-w-md">
+                                Generates a JSON file containing all Students, Leaves, Menu, and Bills.
+                                Save this file locally to prevent data loss.
+                            </p>
+                        </div>
+                        <Button
+                            onClick={handleBackup}
+                            disabled={isBackingUp}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white shrink-0"
+                        >
+                            <Download className="w-4 h-4 mr-2" />
+                            {isBackingUp ? 'Exporting...' : 'Download Backup'}
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
         </div>
