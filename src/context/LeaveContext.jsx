@@ -137,6 +137,41 @@ export function LeaveProvider({ children }) {
         return { success: true };
     };
 
+    const addBulkLeaves = async (studentsList, date, isAdminGranted = false) => {
+        if (!user?.hostelId) return { success: false, error: 'No hostel assigned' };
+        const shapeDate = date.includes('T') ? date.split('T')[0] : date;
+
+        const newEntries = studentsList.map(s => ({
+            student_id: s.id,
+            mess_number: s.messNumber,
+            leave_date: shapeDate,
+            status: 'Approved',
+            hostel_id: user.hostelId,
+            is_admin_granted: isAdminGranted
+        }));
+
+        // Optimistic update
+        setLeaves(prev => {
+            const current = prev[shapeDate] || [];
+            const updated = [...current];
+            newEntries.forEach(entry => {
+                if (!updated.some(l => l.messNumber === entry.mess_number)) {
+                    updated.push({ messNumber: entry.mess_number, isAdminGranted });
+                }
+            });
+            return { ...prev, [shapeDate]: updated };
+        });
+
+        const { error } = await supabase.from('leaves').insert(newEntries);
+
+        if (error) {
+            console.error('Error adding bulk leaves:', error);
+            fetchLeaves(); // Sync back
+            return { success: false, error: error.message };
+        }
+        return { success: true };
+    };
+
     const removeLeave = async (messNumber, date) => {
         if (!user?.hostelId) return { success: false, error: 'No hostel assigned' };
         const shapeDate = date.includes('T') ? date.split('T')[0] : date;
@@ -162,8 +197,31 @@ export function LeaveProvider({ children }) {
         return { success: true };
     };
 
+    const removeBulkLeaves = async (date) => {
+        if (!user?.hostelId) return { success: false, error: 'No hostel assigned' };
+        const shapeDate = date.includes('T') ? date.split('T')[0] : date;
+
+        setLeaves(prev => {
+            const { [shapeDate]: _, ...rest } = prev;
+            return rest;
+        });
+
+        const { error } = await supabase
+            .from('leaves')
+            .delete()
+            .eq('leave_date', shapeDate)
+            .eq('hostel_id', user.hostelId);
+
+        if (error) {
+            console.error('Error removing bulk leaves:', error);
+            fetchLeaves();
+            return { success: false, error: error.message };
+        }
+        return { success: true };
+    };
+
     return (
-        <LeaveContext.Provider value={{ leaves, getLeavesByDate, addLeave, removeLeave, isStudentOnLeave }}>
+        <LeaveContext.Provider value={{ leaves, getLeavesByDate, addLeave, addBulkLeaves, removeLeave, removeBulkLeaves, isStudentOnLeave }}>
             {children}
         </LeaveContext.Provider>
     );

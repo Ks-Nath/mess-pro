@@ -7,7 +7,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import { CalendarIcon, UserX, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function ManageLeaves() {
-    const { getLeavesByDate, addLeave, removeLeave, isStudentOnLeave } = useLeaves();
+    const { getLeavesByDate, addLeave, addBulkLeaves, removeLeave, removeBulkLeaves, isStudentOnLeave } = useLeaves();
     const { students } = useStudents();
     const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -35,12 +35,13 @@ export default function ManageLeaves() {
             if (!window.confirm(`Are you sure you want to GRANT leave for ALL ${activeStudents.length} active students for ${dateKey}?`)) return;
 
             toast.loading('Granting leaves...', { id: 'bulk-grant' });
-            let count = 0;
-            for (const student of activeStudents) {
-                await addLeave(student.messNumber, dateKey, student.id, true);
-                count++;
+            const { success, error } = await addBulkLeaves(activeStudents, dateKey, true);
+
+            if (success) {
+                toast.success(`Leave granted for all ${activeStudents.length} students`, { id: 'bulk-grant' });
+            } else {
+                toast.error(`Failed to grant leaves: ${error}`, { id: 'bulk-grant' });
             }
-            toast.success(`Leave granted for all ${count} students`, { id: 'bulk-grant' });
         } else {
             const selectedStudent = students.find(s => s.messNumber === overrideMessNumber);
             if (!selectedStudent) {
@@ -65,12 +66,13 @@ export default function ManageLeaves() {
             if (!window.confirm(`Are you sure you want to CANCEL leave for ALL ${activeStudents.length} active students for ${dateKey}?`)) return;
 
             toast.loading('Cancelling leaves...', { id: 'bulk-cancel' });
-            let count = 0;
-            for (const student of activeStudents) {
-                await removeLeave(student.messNumber, dateKey);
-                count++;
+            const { success, error } = await removeBulkLeaves(dateKey);
+
+            if (success) {
+                toast.success(`Leave cancelled for all students`, { id: 'bulk-cancel' });
+            } else {
+                toast.error(`Failed to cancel leaves: ${error}`, { id: 'bulk-cancel' });
             }
-            toast.success(`Leave cancelled for all ${count} students`, { id: 'bulk-cancel' });
         } else {
             removeLeave(overrideMessNumber, dateKey);
             toast.success(`Leave cancelled for ${overrideMessNumber} on ${dateKey}`);
