@@ -4,7 +4,7 @@ import { useStudents } from '../context/StudentContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import toast, { Toaster } from 'react-hot-toast';
-import { CalendarIcon, UserX, CheckCircle, AlertCircle } from 'lucide-react';
+import { CalendarIcon, UserX, CheckCircle, AlertCircle, CalendarRange } from 'lucide-react';
 
 export default function ManageLeaves() {
     const { getLeavesByDate, addLeave, addBulkLeaves, removeLeave, removeBulkLeaves, isStudentOnLeave } = useLeaves();
@@ -69,7 +69,7 @@ export default function ManageLeaves() {
             const { success, error } = await removeBulkLeaves(dateKey);
 
             if (success) {
-                toast.success(`Leave cancelled for all students`, { id: 'bulk-cancel' });
+                toast.success(`All leaves cancelled for this date`, { id: 'bulk-cancel' });
             } else {
                 toast.error(`Failed to cancel leaves: ${error}`, { id: 'bulk-cancel' });
             }
@@ -111,8 +111,8 @@ export default function ManageLeaves() {
                         <CardContent>
                             {leavesForDate.length === 0 ? (
                                 <div className="text-center py-8 text-gray-500">
-                                    <UserX className="w-12 h-12 mx-auto mb-2 opacity-20" />
-                                    <p>No students on leave for this date.</p>
+                                    <CalendarRange className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                                    <p>No student is on leave for this specific date.</p>
                                 </div>
                             ) : (
                                 <div className="border rounded-md overflow-hidden">
