@@ -57,7 +57,7 @@ export default function AdminBills() {
         let leaveCount = 0;
         dateRange.forEach(dateKey => {
             const leavesOnDay = getLeavesByDate(dateKey) || [];
-            if (leavesOnDay.includes(student.messNumber)) {
+            if (leavesOnDay.some(l => l.messNumber === student.messNumber)) {
                 leaveCount++;
             }
         });
@@ -146,7 +146,7 @@ export default function AdminBills() {
                 const dayHeader = dayPart.startsWith('0') ? dayPart.substring(1) : dayPart;
 
                 const leavesOnDay = getLeavesByDate(dateKey) || [];
-                const isLeave = leavesOnDay.includes(s.messNumber);
+                const isLeave = leavesOnDay.some(l => l.messNumber === s.messNumber);
 
                 row[dayHeader] = isLeave ? 'L' : 'X';
             });

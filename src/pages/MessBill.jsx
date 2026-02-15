@@ -26,7 +26,8 @@ export default function MessBill() {
     for (let day = 1; day <= daysInMonth; day++) {
         const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const leavesOnDay = getLeavesByDate(dateKey) || [];
-        if (leavesOnDay.includes(user.messNumber)) {
+        // leavesOnDay is now [{ messNumber, isAdminGranted }, ...]
+        if (leavesOnDay.some(l => l.messNumber === user.messNumber)) {
             leaveCount++;
         }
     }

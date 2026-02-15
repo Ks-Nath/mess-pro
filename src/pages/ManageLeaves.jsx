@@ -37,7 +37,7 @@ export default function ManageLeaves() {
             toast.loading('Granting leaves...', { id: 'bulk-grant' });
             let count = 0;
             for (const student of activeStudents) {
-                await addLeave(student.messNumber, dateKey, student.id);
+                await addLeave(student.messNumber, dateKey, student.id, true);
                 count++;
             }
             toast.success(`Leave granted for all ${count} students`, { id: 'bulk-grant' });
@@ -47,7 +47,7 @@ export default function ManageLeaves() {
                 toast.error('Student not found');
                 return;
             }
-            addLeave(overrideMessNumber, dateKey, selectedStudent.id);
+            addLeave(overrideMessNumber, dateKey, selectedStudent.id, true);
             toast.success(`Leave granted for ${overrideMessNumber} on ${dateKey}`);
         }
         setOverrideMessNumber('');

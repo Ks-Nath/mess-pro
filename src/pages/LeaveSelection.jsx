@@ -41,10 +41,11 @@ export default function LeaveSelection() {
     useEffect(() => {
         if (!user) return;
 
-        // Flatten context leaves structure { 'YYYY-MM-DD': ['Mess1', 'Mess2'] } to my dates ['YYYY-MM-DD', ...]
-        const myLeaves = Object.entries(leaves).reduce((acc, [date, messNumbers]) => {
-            if (messNumbers.includes(user.messNumber)) {
-                acc.push(date);
+        // Flatten context leaves structure { 'YYYY-MM-DD': [{ messNumber, isAdminGranted }] } to my dates [{ date, isAdminGranted }]
+        const myLeaves = Object.entries(leaves).reduce((acc, [date, leafRecords]) => {
+            const myRecord = leafRecords.find(l => l.messNumber === user.messNumber);
+            if (myRecord) {
+                acc.push({ date, isAdminGranted: myRecord.isAdminGranted });
             }
             return acc;
         }, []);
@@ -54,9 +55,10 @@ export default function LeaveSelection() {
 
     const isTodayCutoffPassed = today.getHours() >= cutoffTime;
 
-    // Count leaves selected in the currently viewed month
-    const leavesThisMonth = selectedDates.filter((dateStr) => {
-        const d = new Date(dateStr + 'T00:00:00');
+    // Count leaves selected in the currently viewed month (EXCLUDING admin-granted leaves)
+    const leavesThisMonth = selectedDates.filter((l) => {
+        if (l.isAdminGranted) return false;
+        const d = new Date(l.date + 'T00:00:00');
         return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
     }).length;
 
@@ -65,7 +67,16 @@ export default function LeaveSelection() {
 
     const handleDateToggle = (dateStr) => {
         setPendingChanges(true); // Enable save button
-        const isRemoving = selectedDates.includes(dateStr);
+        const isRemoving = selectedDates.some(l => l.date === dateStr);
+        const existingRecord = selectedDates.find(l => l.date === dateStr);
+
+        // If it's an admin leaf, don't allow student to remove it from here?
+        // Actually, the prompt says "mark as purple and do not increase quota".
+        // Usually admin leaves are "mandatory" or different. Let's make them non-removable if purple.
+        if (existingRecord?.isAdminGranted) {
+            toast.error("Admin-granted leaves cannot be modified.");
+            return;
+        }
 
         if (!isRemoving) {
             // Cutoff check
@@ -105,8 +116,8 @@ export default function LeaveSelection() {
 
         setSelectedDates((prev) =>
             isRemoving
-                ? prev.filter((d) => d !== dateStr)
-                : [...prev, dateStr].sort()
+                ? prev.filter((l) => l.date !== dateStr)
+                : [...prev, { date: dateStr, isAdminGranted: false }].sort((a, b) => a.date.localeCompare(b.date))
         );
     };
 
@@ -132,16 +143,17 @@ export default function LeaveSelection() {
         if (!user) return;
 
         // Calculate diffs
-        // Current DB state
-        const currentDbLeaves = Object.entries(leaves).reduce((acc, [date, messNumbers]) => {
-            if (messNumbers.includes(user.messNumber)) {
-                acc.push(date);
+        // Current DB state for this user
+        const currentDbEntries = Object.entries(leaves).reduce((acc, [date, leafRecords]) => {
+            const myRecord = leafRecords.find(l => l.messNumber === user.messNumber);
+            if (myRecord) {
+                acc.push({ date, isAdminGranted: myRecord.isAdminGranted });
             }
             return acc;
         }, []);
 
-        const toAdd = selectedDates.filter(d => !currentDbLeaves.includes(d));
-        const toRemove = currentDbLeaves.filter(d => !selectedDates.includes(d));
+        const toAdd = selectedDates.filter(s => !currentDbEntries.some(db => db.date === s.date));
+        const toRemove = currentDbEntries.filter(db => !selectedDates.some(s => s.date === db.date));
 
         if (toAdd.length === 0 && toRemove.length === 0) {
             toast('No changes to save');
@@ -166,13 +178,13 @@ export default function LeaveSelection() {
             }
 
             // Process Additions
-            for (const date of toAdd) {
-                await addLeave(user.messNumber, date, user.id);
+            for (const entry of toAdd) {
+                await addLeave(user.messNumber, entry.date, user.id, false);
             }
 
             // Process Removals
-            for (const date of toRemove) {
-                await removeLeave(user.messNumber, date);
+            for (const entry of toRemove) {
+                await removeLeave(user.messNumber, entry.date);
             }
 
             toast.success('Leave preferences saved successfully', { id: 'saving' });
@@ -192,7 +204,7 @@ export default function LeaveSelection() {
         });
     };
 
-    const futureDates = selectedDates.filter(d => d >= today.toISOString().split('T')[0]);
+    const futureDates = selectedDates.filter(l => l.date >= today.toISOString().split('T')[0]);
 
     // Progress colour: green → amber → red
     const getProgressColor = () => {
@@ -327,12 +339,16 @@ export default function LeaveSelection() {
                                 </div>
                             ) : (
                                 <ul className="divide-y divide-gray-100">
-                                    {futureDates.map(date => (
-                                        <li key={date} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
-                                            <span className="text-sm font-medium text-gray-700">{formatDate(date)}</span>
-                                            <button onClick={() => handleDateToggle(date)} className="text-gray-400 hover:text-red-500 p-1">
-                                                <X className="w-4 h-4" />
-                                            </button>
+                                    {futureDates.map(entry => (
+                                        <li key={entry.date} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+                                            <span className="text-sm font-medium text-gray-700">{formatDate(entry.date)}</span>
+                                            {entry.isAdminGranted ? (
+                                                <Badge variant="secondary" className="bg-purple-100 text-purple-700 border-purple-200">Admin</Badge>
+                                            ) : (
+                                                <button onClick={() => handleDateToggle(entry.date)} className="text-gray-400 hover:text-red-500 p-1">
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            )}
                                         </li>
                                     ))}
                                 </ul>

@@ -60,8 +60,18 @@ export default function LeaveCalendar({
         return `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     };
 
+    const getLeaveInfo = (day) => {
+        const dateStr = getDateStr(day);
+        // selectedDates is now an array of { date, isAdminGranted } from LeaveSelection
+        return selectedDates.find(l => l.date === dateStr);
+    };
+
     const isSelected = (day) => {
-        return selectedDates.includes(getDateStr(day));
+        return !!getLeaveInfo(day);
+    };
+
+    const isAdminLeave = (day) => {
+        return getLeaveInfo(day)?.isAdminGranted;
     };
 
     const isDisabled = (day) => {
@@ -70,11 +80,14 @@ export default function LeaveCalendar({
         // RULE: Cannot apply for leave for today on today itself.
         if (isToday(day)) return true;
 
+        const info = getLeaveInfo(day);
+        if (info?.isAdminGranted) return true; // Cannot toggle admin leaves from here
+
         // CUTOFF RULE: If cutoff passed (8 PM), disable tomorrow as well.
         if (isTomorrow(day) && isTodayCutoffPassed()) return true;
 
         // If cap is reached, disable unselected future dates (but allow deselecting)
-        if (isCapReached && !isSelected(day)) return true;
+        if (isCapReached && !info) return true;
         return false;
     };
 
@@ -85,6 +98,9 @@ export default function LeaveCalendar({
         if (isToday(day)) return;
 
         if (isTomorrow(day) && isTodayCutoffPassed()) return;
+
+        const info = getLeaveInfo(day);
+        if (info?.isAdminGranted) return;
 
         // Allow the toggle — LeaveSelection.jsx handles the cap toast
         onDateToggle(getDateStr(day));
@@ -123,7 +139,9 @@ export default function LeaveCalendar({
                 ))}
                 {daysArr.map((day) => {
                     const disabled = isDisabled(day);
-                    const selected = isSelected(day);
+                    const info = getLeaveInfo(day);
+                    const selected = !!info;
+                    const adminGranted = info?.isAdminGranted;
                     const todayDate = isToday(day);
                     const cappedOut = isCapReached && !selected && !isPastDate(day) && !(isToday(day) && isTodayCutoffPassed());
 
@@ -134,15 +152,17 @@ export default function LeaveCalendar({
                             disabled={disabled}
                             className={cn(
                                 "aspect-square rounded-lg text-sm font-medium relative transition-all duration-200 border border-transparent",
-                                selected
-                                    ? "bg-red-500 text-white shadow-sm hover:bg-red-600"
-                                    : todayDate
-                                        ? "bg-primary-50 text-primary-700 border-primary-100"
-                                        : cappedOut
-                                            ? "text-gray-300 cursor-not-allowed bg-gray-50/80 border-dashed border-gray-200"
-                                            : disabled
-                                                ? "text-gray-300 cursor-not-allowed bg-gray-50/50"
-                                                : "text-gray-700 hover:bg-gray-100 hover:border-gray-200"
+                                adminGranted
+                                    ? "bg-purple-600 text-white shadow-sm cursor-not-allowed opacity-90"
+                                    : selected
+                                        ? "bg-red-500 text-white shadow-sm hover:bg-red-600"
+                                        : todayDate
+                                            ? "bg-primary-50 text-primary-700 border-primary-100"
+                                            : cappedOut
+                                                ? "text-gray-300 cursor-not-allowed bg-gray-50/80 border-dashed border-gray-200"
+                                                : disabled
+                                                    ? "text-gray-300 cursor-not-allowed bg-gray-50/50"
+                                                    : "text-gray-700 hover:bg-gray-100 hover:border-gray-200"
                             )}
                         >
                             {day}
@@ -158,7 +178,11 @@ export default function LeaveCalendar({
             <div className="flex flex-wrap justify-center gap-6 mt-8 pt-4 border-t border-gray-100">
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded bg-red-500"></div>
-                    <span className="text-xs text-gray-500 font-medium">Leave Selected</span>
+                    <span className="text-xs text-gray-500 font-medium">Your Leave</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded bg-purple-600"></div>
+                    <span className="text-xs text-gray-500 font-medium">Admin Granted</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded bg-primary-50 border border-primary-100"></div>

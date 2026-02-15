@@ -41,7 +41,7 @@ export function LeaveProvider({ children }) {
 
         const { data, error } = await supabase
             .from('leaves')
-            .select('*')
+            .select('leave_date, mess_number, is_admin_granted')
             .eq('status', 'Approved')
             .eq('hostel_id', user.hostelId);
 
@@ -50,14 +50,18 @@ export function LeaveProvider({ children }) {
             return;
         }
 
-        // Transform [ { date: 'Y-M-D', mess_number: '...' } ] -> { 'Y-M-D': ['MESS-1'] }
+        // Transform records to map: { 'YYYY-MM-DD': [{ messNumber, isAdminGranted }] }
         const leavesMap = {};
         data.forEach(record => {
-            const d = record.leave_date; // YYYY-MM-DD
+            const d = record.leave_date;
             if (!leavesMap[d]) leavesMap[d] = [];
-            // ENSURE UNIQUENESS: Only push if not already present
-            if (!leavesMap[d].includes(record.mess_number)) {
-                leavesMap[d].push(record.mess_number);
+
+            // ENSURE UNIQUENESS
+            if (!leavesMap[d].some(l => l.messNumber === record.mess_number)) {
+                leavesMap[d].push({
+                    messNumber: record.mess_number,
+                    isAdminGranted: record.is_admin_granted
+                });
             }
         });
         setLeaves(leavesMap);
@@ -69,23 +73,26 @@ export function LeaveProvider({ children }) {
 
     const isStudentOnLeave = (messNumber, date) => {
         const shapeDate = date.includes('T') ? date.split('T')[0] : date;
-        return leaves[shapeDate]?.includes(messNumber);
+        return leaves[shapeDate]?.some(l => l.messNumber === messNumber);
     };
 
-    const addLeave = async (messNumber, date, studentId) => {
+    const addLeave = async (messNumber, date, studentId, isAdminGranted = false) => {
         if (!user?.hostelId) return { success: false, error: 'No hostel assigned' };
         const shapeDate = date.includes('T') ? date.split('T')[0] : date;
 
         // CHECK IF ALREADY EXISTS (Local Check)
-        if (leaves[shapeDate]?.includes(messNumber)) {
+        if (leaves[shapeDate]?.some(l => l.messNumber === messNumber)) {
             return { success: true, alreadyExists: true };
         }
 
         // Optimistic update
         setLeaves(prev => {
             const current = prev[shapeDate] || [];
-            if (current.includes(messNumber)) return prev;
-            return { ...prev, [shapeDate]: [...current, messNumber] };
+            if (current.some(l => l.messNumber === messNumber)) return prev;
+            return {
+                ...prev,
+                [shapeDate]: [...current, { messNumber, isAdminGranted }]
+            };
         });
 
         let sid = studentId;
@@ -117,7 +124,8 @@ export function LeaveProvider({ children }) {
             mess_number: messNumber,
             leave_date: shapeDate,
             status: 'Approved',
-            hostel_id: user.hostelId
+            hostel_id: user.hostelId,
+            is_admin_granted: isAdminGranted
         }]);
 
         if (error) {
@@ -135,7 +143,7 @@ export function LeaveProvider({ children }) {
 
         setLeaves(prev => {
             const current = prev[shapeDate] || [];
-            return { ...prev, [shapeDate]: current.filter(id => id !== messNumber) };
+            return { ...prev, [shapeDate]: current.filter(l => l.messNumber !== messNumber) };
         });
 
         const { error } = await supabase
