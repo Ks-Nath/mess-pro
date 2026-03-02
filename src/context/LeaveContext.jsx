@@ -231,7 +231,7 @@ export function LeaveProvider({ children }) {
     };
 
     return (
-        <LeaveContext.Provider value={{ leaves, getLeavesByDate, addLeave, addBulkLeaves, removeLeave, removeBulkLeaves, isStudentOnLeave }}>
+        <LeaveContext.Provider value={{ leaves, getLeavesByDate, addLeave, addBulkLeaves, removeLeave, removeBulkLeaves, isStudentOnLeave, refreshLeaves: fetchLeaves }}>
             {children}
         </LeaveContext.Provider>
     );

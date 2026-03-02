@@ -1,19 +1,27 @@
 import { useState } from 'react';
 import { useLeaves } from '../context/LeaveContext';
+import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../context/AuthContext';
 import { useStudents } from '../context/StudentContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import toast, { Toaster } from 'react-hot-toast';
-import { CalendarIcon, UserX, CheckCircle, AlertCircle, CalendarRange } from 'lucide-react';
+import { CalendarIcon, UserX, CheckCircle, AlertCircle, CalendarRange, CalendarPlus } from 'lucide-react';
 
 export default function ManageLeaves() {
-    const { getLeavesByDate, addLeave, addBulkLeaves, removeLeave, removeBulkLeaves, isStudentOnLeave } = useLeaves();
+    const { getLeavesByDate, addLeave, addBulkLeaves, removeLeave, removeBulkLeaves, isStudentOnLeave, refreshLeaves } = useLeaves();
+    const { user } = useAuth();
     const { students } = useStudents();
     const [selectedDate, setSelectedDate] = useState(new Date());
 
     // Manual Override State
     const [overrideMessNumber, setOverrideMessNumber] = useState('');
     const [overrideDate, setOverrideDate] = useState(new Date());
+
+    // Leave Till Join State
+    const [ltjMessNumber, setLtjMessNumber] = useState('');
+    const [ltjStartDate, setLtjStartDate] = useState(new Date());
+    const [ltjEndDate, setLtjEndDate] = useState(new Date());
 
     // Helper to format date as YYYY-MM-DD for context
     const formatDateKey = (date) => {
@@ -78,6 +86,63 @@ export default function ManageLeaves() {
             toast.success(`Leave cancelled for ${overrideMessNumber} on ${dateKey}`);
         }
         setOverrideMessNumber('');
+    };
+
+    const handleLeaveTillJoin = async () => {
+        if (!ltjMessNumber) {
+            toast.error('Please select a student');
+            return;
+        }
+
+        const start = new Date(ltjStartDate);
+        const end = new Date(ltjEndDate);
+
+        if (start > end) {
+            toast.error('Start date must be on or before end date');
+            return;
+        }
+
+        const selectedStudent = students.find(s => s.messNumber === ltjMessNumber);
+        if (!selectedStudent) {
+            toast.error('Student not found');
+            return;
+        }
+
+        // Generate all dates in the range
+        const dates = [];
+        const current = new Date(start);
+        while (current <= end) {
+            dates.push(formatDateKey(current));
+            current.setDate(current.getDate() + 1);
+        }
+
+        if (!window.confirm(`Grant leave for ${selectedStudent.name} (${ltjMessNumber}) for ${dates.length} day(s)?\n${formatDateKey(start)} \u2192 ${formatDateKey(end)}\n\nThese will count towards the monthly quota.`)) return;
+
+        toast.loading(`Granting ${dates.length} leave(s)...`, { id: 'ltj-grant' });
+
+        // Build all records for a SINGLE bulk insert
+        const records = dates.map(dateKey => ({
+            student_id: selectedStudent.id,
+            mess_number: ltjMessNumber,
+            leave_date: dateKey,
+            status: 'Approved',
+            hostel_id: user.hostelId,
+            is_admin_granted: false
+        }));
+
+        const { error } = await supabase
+            .from('leaves')
+            .insert(records);
+
+        if (error) {
+            toast.error(`Failed: ${error.message}`, { id: 'ltj-grant' });
+            return;
+        }
+
+        toast.success(`Granted ${dates.length} leave(s) for ${selectedStudent.name}`, { id: 'ltj-grant' });
+        setLtjMessNumber('');
+        // Sync local state
+        if (refreshLeaves) refreshLeaves();
     };
 
     return (
@@ -216,6 +281,62 @@ export default function ManageLeaves() {
                                     Cancel
                                 </Button>
                             </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Leave Till Join Section */}
+                    <Card className="border-l-4 border-l-amber-500">
+                        <CardHeader>
+                            <CardTitle>Leave Till Join</CardTitle>
+                            <CardDescription>
+                                Grant leaves for a date range. These leaves will count towards the student's monthly quota.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-700">Select Student</label>
+                                <select
+                                    className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                    value={ltjMessNumber}
+                                    onChange={(e) => setLtjMessNumber(e.target.value)}
+                                >
+                                    <option value="" disabled>Select student...</option>
+                                    {students.map(student => (
+                                        <option key={student.id} value={student.messNumber}>
+                                            {student.name} ({student.messNumber})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-700">Start Date</label>
+                                    <input
+                                        type="date"
+                                        className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                        value={formatDateKey(ltjStartDate)}
+                                        onChange={(e) => setLtjStartDate(new Date(e.target.value))}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-700">End Date</label>
+                                    <input
+                                        type="date"
+                                        className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                        value={formatDateKey(ltjEndDate)}
+                                        onChange={(e) => setLtjEndDate(new Date(e.target.value))}
+                                    />
+                                </div>
+                            </div>
+
+                            <Button
+                                className="w-full bg-amber-600 hover:bg-amber-700"
+                                onClick={handleLeaveTillJoin}
+                            >
+                                <CalendarPlus className="w-4 h-4 mr-2" />
+                                Grant Leaves
+                            </Button>
                         </CardContent>
                     </Card>
                 </div>
