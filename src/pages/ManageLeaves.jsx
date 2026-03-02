@@ -43,7 +43,7 @@ export default function ManageLeaves() {
             if (!window.confirm(`Are you sure you want to GRANT leave for ALL ${activeStudents.length} active students for ${dateKey}?`)) return;
 
             toast.loading('Granting leaves...', { id: 'bulk-grant' });
-            const { success, error } = await addBulkLeaves(activeStudents, dateKey, true);
+            const { success, error } = await addBulkLeaves(activeStudents, dateKey, false);
 
             if (success) {
                 toast.success(`Leave granted for all ${activeStudents.length} students`, { id: 'bulk-grant' });
@@ -56,7 +56,7 @@ export default function ManageLeaves() {
                 toast.error('Student not found');
                 return;
             }
-            await addLeave(overrideMessNumber, dateKey, selectedStudent.id, true);
+            await addLeave(overrideMessNumber, dateKey, selectedStudent.id, false);
             toast.success(`Leave granted for ${overrideMessNumber} on ${dateKey}`);
         }
         setOverrideMessNumber('');
@@ -116,7 +116,7 @@ export default function ManageLeaves() {
             current.setDate(current.getDate() + 1);
         }
 
-        if (!window.confirm(`Grant leave for ${selectedStudent.name} (${ltjMessNumber}) for ${dates.length} day(s)?\n${formatDateKey(start)} \u2192 ${formatDateKey(end)}\n\nThese will count towards the monthly quota.`)) return;
+        if (!window.confirm(`Grant leave for ${selectedStudent.name} (${ltjMessNumber}) for ${dates.length} day(s)?\n${formatDateKey(start)} \u2192 ${formatDateKey(end)}\n\nThese will NOT count towards the monthly quota.`)) return;
 
         toast.loading(`Granting ${dates.length} leave(s)...`, { id: 'ltj-grant' });
 
@@ -127,7 +127,7 @@ export default function ManageLeaves() {
             leave_date: dateKey,
             status: 'Approved',
             hostel_id: user.hostelId,
-            is_admin_granted: false
+            is_admin_granted: true
         }));
 
         const { error } = await supabase
@@ -289,7 +289,7 @@ export default function ManageLeaves() {
                         <CardHeader>
                             <CardTitle>Leave Till Join</CardTitle>
                             <CardDescription>
-                                Grant leaves for a date range. These leaves will count towards the student's monthly quota.
+                                Grant leaves for a date range. These will bypass the monthly quota.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
