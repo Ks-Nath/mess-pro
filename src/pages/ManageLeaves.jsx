@@ -102,12 +102,6 @@ export default function ManageLeaves() {
             return;
         }
 
-        const selectedStudent = students.find(s => s.messNumber === ltjMessNumber);
-        if (!selectedStudent) {
-            toast.error('Student not found');
-            return;
-        }
-
         // Generate all dates in the range
         const dates = [];
         const current = new Date(start);
@@ -116,32 +110,68 @@ export default function ManageLeaves() {
             current.setDate(current.getDate() + 1);
         }
 
-        if (!window.confirm(`Grant leave for ${selectedStudent.name} (${ltjMessNumber}) for ${dates.length} day(s)?\n${formatDateKey(start)} \u2192 ${formatDateKey(end)}\n\nThese will NOT count towards the monthly quota.`)) return;
+        if (ltjMessNumber === 'ALL') {
+            const activeStudents = students.filter(s => s.messStatus === 'Active');
+            if (!window.confirm(`Grant leave for ALL ${activeStudents.length} active students for ${dates.length} day(s)?\n${formatDateKey(start)} \u2192 ${formatDateKey(end)}\n\nTotal records: ${activeStudents.length * dates.length}\nThese will NOT count towards the monthly quota.`)) return;
 
-        toast.loading(`Granting ${dates.length} leave(s)...`, { id: 'ltj-grant' });
+            toast.loading(`Granting ${activeStudents.length * dates.length} leave(s)...`, { id: 'ltj-grant' });
 
-        // Build all records for a SINGLE bulk insert
-        const records = dates.map(dateKey => ({
-            student_id: selectedStudent.id,
-            mess_number: ltjMessNumber,
-            leave_date: dateKey,
-            status: 'Approved',
-            hostel_id: user.hostelId,
-            is_admin_granted: true
-        }));
+            // Build ALL records in one flat array: students × dates — SINGLE bulk insert
+            const records = activeStudents.flatMap(student =>
+                dates.map(dateKey => ({
+                    student_id: student.id,
+                    mess_number: student.messNumber,
+                    leave_date: dateKey,
+                    status: 'Approved',
+                    hostel_id: user.hostelId,
+                    is_admin_granted: true
+                }))
+            );
 
-        const { error } = await supabase
-            .from('leaves')
-            .insert(records);
+            const { error } = await supabase
+                .from('leaves')
+                .insert(records);
 
-        if (error) {
-            toast.error(`Failed: ${error.message}`, { id: 'ltj-grant' });
-            return;
+            if (error) {
+                toast.error(`Failed: ${error.message}`, { id: 'ltj-grant' });
+                return;
+            }
+
+            toast.success(`Granted ${records.length} leave(s) for all students`, { id: 'ltj-grant' });
+        } else {
+            const selectedStudent = students.find(s => s.messNumber === ltjMessNumber);
+            if (!selectedStudent) {
+                toast.error('Student not found');
+                return;
+            }
+
+            if (!window.confirm(`Grant leave for ${selectedStudent.name} (${ltjMessNumber}) for ${dates.length} day(s)?\n${formatDateKey(start)} \u2192 ${formatDateKey(end)}\n\nThese will NOT count towards the monthly quota.`)) return;
+
+            toast.loading(`Granting ${dates.length} leave(s)...`, { id: 'ltj-grant' });
+
+            // Build all records for a SINGLE bulk insert
+            const records = dates.map(dateKey => ({
+                student_id: selectedStudent.id,
+                mess_number: ltjMessNumber,
+                leave_date: dateKey,
+                status: 'Approved',
+                hostel_id: user.hostelId,
+                is_admin_granted: true
+            }));
+
+            const { error } = await supabase
+                .from('leaves')
+                .insert(records);
+
+            if (error) {
+                toast.error(`Failed: ${error.message}`, { id: 'ltj-grant' });
+                return;
+            }
+
+            toast.success(`Granted ${dates.length} leave(s) for ${selectedStudent.name}`, { id: 'ltj-grant' });
         }
 
-        toast.success(`Granted ${dates.length} leave(s) for ${selectedStudent.name}`, { id: 'ltj-grant' });
         setLtjMessNumber('');
-        // Sync local state
         if (refreshLeaves) refreshLeaves();
     };
 
@@ -301,6 +331,7 @@ export default function ManageLeaves() {
                                     onChange={(e) => setLtjMessNumber(e.target.value)}
                                 >
                                     <option value="" disabled>Select student...</option>
+                                    <option value="ALL" className="font-bold text-amber-600">SELECT ALL</option>
                                     {students.map(student => (
                                         <option key={student.id} value={student.messNumber}>
                                             {student.name} ({student.messNumber})
