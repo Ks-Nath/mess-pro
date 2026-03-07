@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useStudents } from '../context/StudentContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
 import toast, { Toaster } from 'react-hot-toast';
 import { CalendarIcon, UserX, CheckCircle, AlertCircle, CalendarRange, CalendarPlus } from 'lucide-react';
 
@@ -199,8 +200,11 @@ export default function ManageLeaves() {
                                     onChange={(e) => setSelectedDate(new Date(e.target.value))}
                                 />
                             </CardTitle>
-                            <CardDescription>
-                                Students on leave for {selectedDate.toDateString()}
+                            <CardDescription className="flex items-center justify-between">
+                                <span>Students on leave for {selectedDate.toDateString()}</span>
+                                <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100">
+                                    Total: {leavesForDate.length}
+                                </Badge>
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -217,7 +221,6 @@ export default function ManageLeaves() {
                                                 <th className="px-4 py-3 font-medium text-gray-700">Mess No</th>
                                                 <th className="px-4 py-3 font-medium text-gray-700">Name</th>
                                                 <th className="px-4 py-3 font-medium text-gray-700 hidden md:table-cell">Phone</th>
-                                                <th className="px-4 py-3 font-medium text-gray-700 text-right">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-100">
@@ -234,18 +237,6 @@ export default function ManageLeaves() {
                                                         </td>
                                                         <td className="px-4 py-3">{student ? student.name : 'Unknown'}</td>
                                                         <td className="px-4 py-3 hidden md:table-cell">{student ? student.phone : '-'}</td>
-                                                        <td className="px-4 py-3 text-right">
-                                                            <Button
-                                                                variant="destructive"
-                                                                size="sm"
-                                                                onClick={async () => {
-                                                                    await removeLeave(messNo, formatDateKey(selectedDate));
-                                                                    toast.success('Leave cancelled');
-                                                                }}
-                                                            >
-                                                                Cancel
-                                                            </Button>
-                                                        </td>
                                                     </tr>
                                                 );
                                             })}
