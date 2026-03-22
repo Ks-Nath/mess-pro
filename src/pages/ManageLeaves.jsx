@@ -142,7 +142,7 @@ export default function ManageLeaves() {
 
             for (let i = 0; i < records.length; i += BATCH_SIZE) {
                 const batch = records.slice(i, i + BATCH_SIZE);
-                const { error } = await supabase.from('leaves').insert(batch);
+                const { error } = await supabase.from('leaves').upsert(batch, { onConflict: 'student_id,leave_date', ignoreDuplicates: true });
                 
                 if (error) {
                     console.error('Batch error:', error);
@@ -179,7 +179,7 @@ export default function ManageLeaves() {
 
             const { error } = await supabase
                 .from('leaves')
-                .insert(records);
+                .upsert(records, { onConflict: 'student_id,leave_date', ignoreDuplicates: true });
 
             if (error) {
                 toast.error(`Failed: ${error.message}`, { id: 'ltj-grant' });

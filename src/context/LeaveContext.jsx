@@ -183,7 +183,7 @@ export function LeaveProvider({ children }) {
 
         for (let i = 0; i < newEntries.length; i += BATCH_SIZE) {
             const batch = newEntries.slice(i, i + BATCH_SIZE);
-            const { data, error } = await supabase.from('leaves').insert(batch).select();
+            const { data, error } = await supabase.from('leaves').upsert(batch, { onConflict: 'student_id,leave_date', ignoreDuplicates: true }).select();
             
             if (error) {
                 hasError = true;
