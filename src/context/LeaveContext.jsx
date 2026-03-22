@@ -171,13 +171,35 @@ export function LeaveProvider({ children }) {
             });
             return { ...prev, [shapeDate]: updated };
         });
+        // Debugging logs requested by user
+        console.log(`[LeaveContext: Backend Call] IDs received (studentsList.length):`, studentsList.length);
+        console.log(`[LeaveContext: Backend Call] Request Payload (newEntries length):`, newEntries.length);
+        
+        // BATCHING LOGIC
+        const BATCH_SIZE = 100;
+        let finalData = [];
+        let hasError = false;
+        let errorMessage = '';
 
-        const { error } = await supabase.from('leaves').insert(newEntries);
+        for (let i = 0; i < newEntries.length; i += BATCH_SIZE) {
+            const batch = newEntries.slice(i, i + BATCH_SIZE);
+            const { data, error } = await supabase.from('leaves').insert(batch).select();
+            
+            if (error) {
+                hasError = true;
+                errorMessage = error.message;
+                break;
+            }
+            if (data) finalData = finalData.concat(data);
+        }
 
-        if (error) {
-            console.error('Error adding bulk leaves:', error);
+        console.log(`[LeaveContext: Response] Error:`, hasError ? errorMessage : null);
+        console.log(`[LeaveContext: Response] data.length (Rows actually updated):`, finalData.length);
+
+        if (hasError) {
+            console.error('Error adding bulk leaves:', errorMessage);
             fetchLeaves(); // Sync back
-            return { success: false, error: error.message };
+            return { success: false, error: errorMessage };
         }
         return { success: true };
     };

@@ -43,6 +43,12 @@ export default function ManageLeaves() {
             const activeStudents = students.filter(s => s.messStatus === 'Active');
             if (!window.confirm(`Are you sure you want to GRANT leave for ALL ${activeStudents.length} active students for ${dateKey}?`)) return;
 
+            // Debugging Logs requested by user
+            console.log(`[ManageLeaves] "Select All" triggered. Users selected:`, activeStudents.length);
+            const selectedIds = activeStudents.map(s => s.id);
+            console.log(`[ManageLeaves] selectedIds.length before sending request:`, selectedIds.length);
+            console.log(`[ManageLeaves] selectedIds array:`, selectedIds);
+
             toast.loading('Granting leaves...', { id: 'bulk-grant' });
             const { success, error } = await addBulkLeaves(activeStudents, dateKey, false);
 
@@ -117,7 +123,7 @@ export default function ManageLeaves() {
 
             toast.loading(`Granting ${activeStudents.length * dates.length} leave(s)...`, { id: 'ltj-grant' });
 
-            // Build ALL records in one flat array: students × dates — SINGLE bulk insert
+            // Build ALL records in one flat array: students × dates
             const records = activeStudents.flatMap(student =>
                 dates.map(dateKey => ({
                     student_id: student.id,
@@ -129,16 +135,27 @@ export default function ManageLeaves() {
                 }))
             );
 
-            const { error } = await supabase
-                .from('leaves')
-                .insert(records);
+            // BATCHING: Supabase/PostgREST can struggle with very large payload arrays.
+            const BATCH_SIZE = 100;
+            let successCount = 0;
+            let hasError = false;
 
-            if (error) {
-                toast.error(`Failed: ${error.message}`, { id: 'ltj-grant' });
-                return;
+            for (let i = 0; i < records.length; i += BATCH_SIZE) {
+                const batch = records.slice(i, i + BATCH_SIZE);
+                const { error } = await supabase.from('leaves').insert(batch);
+                
+                if (error) {
+                    console.error('Batch error:', error);
+                    toast.error(`Failed on batch: ${error.message}`, { id: 'ltj-grant' });
+                    hasError = true;
+                    break;
+                }
+                successCount += batch.length;
             }
 
-            toast.success(`Granted ${records.length} leave(s) for all students`, { id: 'ltj-grant' });
+            if (!hasError) {
+                toast.success(`Granted ${successCount} leave(s) for all students`, { id: 'ltj-grant' });
+            }
         } else {
             const selectedStudent = students.find(s => s.messNumber === ltjMessNumber);
             if (!selectedStudent) {
