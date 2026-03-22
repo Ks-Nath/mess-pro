@@ -42,28 +42,46 @@ export function LeaveProvider({ children }) {
     const fetchLeaves = async () => {
         if (!user?.hostelId) return;
 
-        let query = supabase
-            .from('leaves')
-            .select('leave_date, mess_number, is_admin_granted')
-            .eq('status', 'Approved')
-            .eq('hostel_id', user.hostelId)
-            .limit(5000);
+        const PAGE_SIZE = 100;
+        let allData = [];
+        let from = 0;
+        let keepFetching = true;
 
-        // If STUDENT, only fetch OWN leaves
-        if (user.role !== 'admin' && user.messNumber) {
-            query = query.eq('mess_number', user.messNumber);
-        }
+        while (keepFetching) {
+            let query = supabase
+                .from('leaves')
+                .select('leave_date, mess_number, is_admin_granted')
+                .eq('status', 'Approved')
+                .eq('hostel_id', user.hostelId)
+                .range(from, from + PAGE_SIZE - 1);
 
-        const { data, error } = await query;
+            // If STUDENT, only fetch OWN leaves
+            if (user.role !== 'admin' && user.messNumber) {
+                query = query.eq('mess_number', user.messNumber);
+            }
 
-        if (error) {
-            console.error('Error fetching leaves:', error);
-            return;
+            const { data, error } = await query;
+
+            if (error) {
+                console.error('Error fetching leaves:', error);
+                return;
+            }
+
+            if (data && data.length > 0) {
+                allData = allData.concat(data);
+            }
+
+            // If we got fewer rows than the page size, we've reached the end
+            if (!data || data.length < PAGE_SIZE) {
+                keepFetching = false;
+            } else {
+                from += PAGE_SIZE;
+            }
         }
 
         // Transform records to map: { 'YYYY-MM-DD': [{ messNumber, isAdminGranted }] }
         const leavesMap = {};
-        data.forEach(record => {
+        allData.forEach(record => {
             const d = record.leave_date;
             if (!leavesMap[d]) leavesMap[d] = [];
 
