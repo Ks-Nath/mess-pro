@@ -46,7 +46,8 @@ export function LeaveProvider({ children }) {
             .from('leaves')
             .select('leave_date, mess_number, is_admin_granted')
             .eq('status', 'Approved')
-            .eq('hostel_id', user.hostelId);
+            .eq('hostel_id', user.hostelId)
+            .limit(5000);
 
         // If STUDENT, only fetch OWN leaves
         if (user.role !== 'admin' && user.messNumber) {
