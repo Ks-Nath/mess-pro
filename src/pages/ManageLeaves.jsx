@@ -29,7 +29,8 @@ export default function ManageLeaves() {
         return date.toISOString().split('T')[0];
     };
 
-    const leavesForDate = getLeavesByDate(formatDateKey(selectedDate));
+    const leavesForDate = [...getLeavesByDate(formatDateKey(selectedDate))]
+        .sort((a, b) => a.messNumber.localeCompare(b.messNumber, undefined, { numeric: true, sensitivity: 'base' }));
 
     const handleGrantLeave = async () => {
         if (!overrideMessNumber) {
