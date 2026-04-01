@@ -23,9 +23,9 @@ export default function LeaveTillJoinList() {
         setLoading(true);
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
         try {
-            // Step 1: Find which students have an LTJ leave on today
+            // Step 1: Find which students have an ACTIVE OR UPCOMING LTJ leave (>= today)
             const PAGE_SIZE = 1000;
-            let todayData = [];
+            let activeData = [];
             let from = 0;
             let keepFetching = true;
 
@@ -36,22 +36,22 @@ export default function LeaveTillJoinList() {
                     .eq('hostel_id', user.hostelId)
                     .eq('status', 'Approved')
                     .eq('is_admin_granted', true)
-                    .eq('leave_date', today)
+                    .gte('leave_date', today)
                     .range(from, from + PAGE_SIZE - 1);
 
                 if (error) throw error;
-                if (data && data.length > 0) todayData = todayData.concat(data);
+                if (data && data.length > 0) activeData = activeData.concat(data);
                 if (!data || data.length < PAGE_SIZE) keepFetching = false;
                 else from += PAGE_SIZE;
             }
 
-            const messNumbers = [...new Set(todayData.map(r => r.mess_number))];
+            const messNumbers = [...new Set(activeData.map(r => r.mess_number))];
             if (messNumbers.length === 0) {
                 setLtjRecords([]);
                 return;
             }
 
-            // Step 2: Fetch ALL LTJ leave dates for those students (to find contiguous block)
+            // Step 2: Fetch ALL LTJ leave dates for those students (to find the full contiguous block, including past segments)
             let allDatesData = [];
             let from2 = 0;
             let keepFetching2 = true;
@@ -79,14 +79,16 @@ export default function LeaveTillJoinList() {
                 byStudent[mess_number].push(leave_date);
             });
 
-            // Step 4: For each student, find the contiguous block that includes today
+            // Step 4: For each student, find the contiguous block containing their first occurrence >= today
             const list = messNumbers.map(mn => {
-                const dates = (byStudent[mn] || []).sort();
-                const todayIdx = dates.indexOf(today);
-                if (todayIdx === -1) return { messNumber: mn, fromDate: today, toDate: today };
+                const dates = [...new Set(byStudent[mn] || [])].sort();
+                
+                // Find the first date >= today
+                const targetIdx = dates.findIndex(d => d >= today);
+                if (targetIdx === -1) return { messNumber: mn, fromDate: today, toDate: today };
 
                 // Walk backwards to find start of contiguous block
-                let startIdx = todayIdx;
+                let startIdx = targetIdx;
                 while (startIdx > 0) {
                     const prev = new Date(dates[startIdx - 1]);
                     const curr = new Date(dates[startIdx]);
@@ -96,7 +98,7 @@ export default function LeaveTillJoinList() {
                 }
 
                 // Walk forwards to find end of contiguous block
-                let endIdx = todayIdx;
+                let endIdx = targetIdx;
                 while (endIdx < dates.length - 1) {
                     const curr = new Date(dates[endIdx]);
                     const next = new Date(dates[endIdx + 1]);
