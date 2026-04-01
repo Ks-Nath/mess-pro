@@ -23,10 +23,9 @@ export default function LeaveTillJoinList() {
         setLoading(true);
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
         try {
-            // Only fetch admin-granted leaves where today is included in the range.
-            // We do this by fetching all LTJ records for today specifically.
+            // Step 1: Find which students have an LTJ leave on today
             const PAGE_SIZE = 1000;
-            let allData = [];
+            let todayData = [];
             let from = 0;
             let keepFetching = true;
 
@@ -37,68 +36,81 @@ export default function LeaveTillJoinList() {
                     .eq('hostel_id', user.hostelId)
                     .eq('status', 'Approved')
                     .eq('is_admin_granted', true)
-                    .eq('leave_date', today)          // ← only today's records
+                    .eq('leave_date', today)
                     .range(from, from + PAGE_SIZE - 1);
 
                 if (error) throw error;
-
-                if (data && data.length > 0) {
-                    allData = allData.concat(data);
-                }
-
-                if (!data || data.length < PAGE_SIZE) {
-                    keepFetching = false;
-                } else {
-                    from += PAGE_SIZE;
-                }
+                if (data && data.length > 0) todayData = todayData.concat(data);
+                if (!data || data.length < PAGE_SIZE) keepFetching = false;
+                else from += PAGE_SIZE;
             }
 
-            // Each row here is a student on LTJ today.
-            // Now fetch their full range (earliest & latest LTJ date) separately so we can show "from → to".
-            const messNumbers = [...new Set(allData.map(r => r.mess_number))];
-
-            let rangeData = [];
-            if (messNumbers.length > 0) {
-                // Fetch all LTJ leaves for these students to determine original range
-                const PAGE_SIZE2 = 1000;
-                let from2 = 0;
-                let keepFetching2 = true;
-                while (keepFetching2) {
-                    const { data: rd, error: re } = await supabase
-                        .from('leaves')
-                        .select('mess_number, leave_date')
-                        .eq('hostel_id', user.hostelId)
-                        .eq('status', 'Approved')
-                        .eq('is_admin_granted', true)
-                        .in('mess_number', messNumbers)
-                        .order('leave_date', { ascending: true })
-                        .range(from2, from2 + PAGE_SIZE2 - 1);
-
-                    if (re) throw re;
-                    if (rd && rd.length > 0) rangeData = rangeData.concat(rd);
-                    if (!rd || rd.length < PAGE_SIZE2) keepFetching2 = false;
-                    else from2 += PAGE_SIZE2;
-                }
+            const messNumbers = [...new Set(todayData.map(r => r.mess_number))];
+            if (messNumbers.length === 0) {
+                setLtjRecords([]);
+                return;
             }
 
-            // Group to get min/max date per student
-            const grouped = {};
-            rangeData.forEach(record => {
-                const mn = record.mess_number;
-                if (!grouped[mn]) {
-                    grouped[mn] = { fromDate: record.leave_date, toDate: record.leave_date };
-                } else {
-                    if (record.leave_date < grouped[mn].fromDate) grouped[mn].fromDate = record.leave_date;
-                    if (record.leave_date > grouped[mn].toDate) grouped[mn].toDate = record.leave_date;
-                }
+            // Step 2: Fetch ALL LTJ leave dates for those students (to find contiguous block)
+            let allDatesData = [];
+            let from2 = 0;
+            let keepFetching2 = true;
+            while (keepFetching2) {
+                const { data: rd, error: re } = await supabase
+                    .from('leaves')
+                    .select('mess_number, leave_date')
+                    .eq('hostel_id', user.hostelId)
+                    .eq('status', 'Approved')
+                    .eq('is_admin_granted', true)
+                    .in('mess_number', messNumbers)
+                    .order('leave_date', { ascending: true })
+                    .range(from2, from2 + PAGE_SIZE - 1);
+
+                if (re) throw re;
+                if (rd && rd.length > 0) allDatesData = allDatesData.concat(rd);
+                if (!rd || rd.length < PAGE_SIZE) keepFetching2 = false;
+                else from2 += PAGE_SIZE;
+            }
+
+            // Step 3: Group dates by student
+            const byStudent = {};
+            allDatesData.forEach(({ mess_number, leave_date }) => {
+                if (!byStudent[mess_number]) byStudent[mess_number] = [];
+                byStudent[mess_number].push(leave_date);
             });
 
-            // Only include students who are on leave today
-            const list = messNumbers.map(mn => ({
-                messNumber: mn,
-                fromDate: grouped[mn]?.fromDate ?? today,
-                toDate: grouped[mn]?.toDate ?? today,
-            }));
+            // Step 4: For each student, find the contiguous block that includes today
+            const list = messNumbers.map(mn => {
+                const dates = (byStudent[mn] || []).sort();
+                const todayIdx = dates.indexOf(today);
+                if (todayIdx === -1) return { messNumber: mn, fromDate: today, toDate: today };
+
+                // Walk backwards to find start of contiguous block
+                let startIdx = todayIdx;
+                while (startIdx > 0) {
+                    const prev = new Date(dates[startIdx - 1]);
+                    const curr = new Date(dates[startIdx]);
+                    const diffDays = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
+                    if (diffDays === 1) startIdx--;
+                    else break;
+                }
+
+                // Walk forwards to find end of contiguous block
+                let endIdx = todayIdx;
+                while (endIdx < dates.length - 1) {
+                    const curr = new Date(dates[endIdx]);
+                    const next = new Date(dates[endIdx + 1]);
+                    const diffDays = Math.round((next - curr) / (1000 * 60 * 60 * 24));
+                    if (diffDays === 1) endIdx++;
+                    else break;
+                }
+
+                return {
+                    messNumber: mn,
+                    fromDate: dates[startIdx],
+                    toDate: dates[endIdx],
+                };
+            });
 
             list.sort((a, b) =>
                 a.messNumber.localeCompare(b.messNumber, undefined, { numeric: true, sensitivity: 'base' })
@@ -182,10 +194,9 @@ export default function LeaveTillJoinList() {
                             <table className="w-full text-sm text-left">
                                 <thead className="bg-gray-50 border-b">
                                     <tr>
-                                        <th className="px-4 py-3 font-semibold text-gray-700 w-28">Mess No</th>
+                                        <th className="px-4 py-3 font-semibold text-gray-700 w-20">Mess No</th>
                                         <th className="px-4 py-3 font-semibold text-gray-700">Name</th>
-                                        <th className="px-4 py-3 font-semibold text-gray-700">From</th>
-                                        <th className="px-4 py-3 font-semibold text-gray-700">To</th>
+                                        <th className="px-4 py-3 font-semibold text-gray-700">Leave Period</th>
                                         <th className="px-4 py-3 font-semibold text-gray-700 hidden md:table-cell text-center">Days</th>
                                     </tr>
                                 </thead>
@@ -204,8 +215,13 @@ export default function LeaveTillJoinList() {
                                                     {record.messNumber}
                                                 </td>
                                                 <td className="px-4 py-3 text-gray-800">{name}</td>
-                                                <td className="px-4 py-3 text-gray-600">{formatDate(record.fromDate)}</td>
-                                                <td className="px-4 py-3 text-gray-600">{formatDate(record.toDate)}</td>
+                                                <td className="px-4 py-3">
+                                                    <span className="inline-flex items-center gap-1.5 flex-wrap">
+                                                        <span className="text-gray-700 font-medium">{formatDate(record.fromDate)}</span>
+                                                        <span className="text-amber-500 font-bold">→</span>
+                                                        <span className="text-gray-700 font-medium">{formatDate(record.toDate)}</span>
+                                                    </span>
+                                                </td>
                                                 <td className="px-4 py-3 hidden md:table-cell text-center">
                                                     <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100">
                                                         {days}d
