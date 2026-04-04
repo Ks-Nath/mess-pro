@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import toast, { Toaster } from 'react-hot-toast';
-import { User, Phone, Key, ShieldCheck, Hash, Home } from 'lucide-react';
+import { User, Phone, Lock, ShieldCheck, Hash, Home } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -110,10 +110,13 @@ export default function Profile() {
 
                 {/* Security Section */}
                 <Card className="border-gray-200 shadow-sm h-fit">
-                    <CardHeader className="bg-indigo-50 border-b border-indigo-100 pb-4">
-                        <CardTitle className="text-lg flex items-center gap-2 text-indigo-900">
-                            <ShieldCheck className="w-5 h-5 text-indigo-600" />
-                            Security
+                    <CardHeader className="bg-indigo-600 border-b border-indigo-700 pb-4">
+                        <CardTitle className="text-lg flex items-center justify-between text-white">
+                            <div className="flex items-center gap-2">
+                                <ShieldCheck className="w-5 h-5 text-indigo-100" />
+                                Security
+                            </div>
+                            <span className="text-[10px] font-mono opacity-50">v1.1</span>
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-6 space-y-4">
@@ -125,12 +128,13 @@ export default function Profile() {
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">New Password</label>
                                 <div className="relative">
-                                    <Key className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                                    <Lock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                                     <input
                                         type="password"
                                         value={newPassword}
                                         onChange={(e) => setNewPassword(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                        style={{ paddingLeft: '2.5rem' }}
+                                        className="w-full pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                                         placeholder="Min 6 characters"
                                     />
                                 </div>
@@ -139,12 +143,13 @@ export default function Profile() {
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">Confirm Password</label>
                                 <div className="relative">
-                                    <Key className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                                    <Lock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                                     <input
                                         type="password"
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                        style={{ paddingLeft: '2.5rem' }}
+                                        className="w-full pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                                         placeholder="Repeat password"
                                     />
                                 </div>
