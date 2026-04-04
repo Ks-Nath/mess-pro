@@ -258,6 +258,10 @@ export default function ManageLeaves() {
                         <CardContent>
                             {isLoading ? (
                                 <div className="space-y-3">
+                                    <div className="flex items-center gap-2 text-blue-600 font-medium animate-pulse mb-2 text-sm">
+                                        <CalendarRange className="w-4 h-4" />
+                                        <span>Loading records...</span>
+                                    </div>
                                     <Skeleton className="h-10 w-full" />
                                     <Skeleton className="h-10 w-full" />
                                     <Skeleton className="h-10 w-full" />
