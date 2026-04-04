@@ -85,12 +85,16 @@ export function LeaveProvider({ children }) {
             const d = record.leave_date;
             if (!leavesMap[d]) leavesMap[d] = [];
 
-            // ENSURE UNIQUENESS
-            if (!leavesMap[d].some(l => l.messNumber === record.mess_number)) {
+            // ENSURE UNIQUENESS AND PRIORITY
+            const existingIdx = leavesMap[d].findIndex(l => l.messNumber === record.mess_number);
+            if (existingIdx === -1) {
                 leavesMap[d].push({
                     messNumber: record.mess_number,
                     isAdminGranted: record.is_admin_granted
                 });
+            } else if (record.is_admin_granted && !leavesMap[d][existingIdx].isAdminGranted) {
+                // Overwrite student leave with admin leave priority
+                leavesMap[d][existingIdx].isAdminGranted = true;
             }
         });
         setLeaves(leavesMap);
