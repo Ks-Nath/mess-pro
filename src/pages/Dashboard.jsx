@@ -48,7 +48,7 @@ export default function Dashboard() {
             {/* Minimal Header */}
             <div className="space-y-3">
                 <h1 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight break-words">
-                    Welcome back, <br className="block sm:hidden" /> {user?.name?.split(' ')[0]}
+                    Welcome back, <br className="block sm:hidden" /> {user?.name?.split(' ')?.[0] || 'Member'}
                 </h1>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     <p className="text-lg text-gray-500">What would you like to do today?</p>

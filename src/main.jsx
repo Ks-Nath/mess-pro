@@ -7,8 +7,12 @@ import { LeaveProvider } from './context/LeaveContext'
 import { StudentProvider } from './context/StudentContext'
 import './index.css'
 import App from './App'
+import { registerSW } from 'virtual:pwa-register'
 
 import { MenuProvider } from './context/MenuContext'
+
+// Register PWA service worker with autoUpdate
+registerSW({ immediate: true })
 
 createRoot(document.getElementById('root')).render(
     <StrictMode>
