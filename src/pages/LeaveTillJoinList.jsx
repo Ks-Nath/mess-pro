@@ -182,6 +182,10 @@ export default function LeaveTillJoinList() {
                 <CardContent>
                     {loading ? (
                         <div className="space-y-4">
+                            <div className="flex items-center gap-2 text-amber-600 font-medium animate-pulse mb-2">
+                                <CalendarRange className="w-4 h-4" />
+                                <span>Loading records...</span>
+                            </div>
                             <Skeleton className="h-10 w-full" />
                             <Skeleton className="h-10 w-full" />
                             <Skeleton className="h-10 w-full" />
