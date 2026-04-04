@@ -51,7 +51,7 @@ export default function ManageLeaves() {
             console.log(`[ManageLeaves] selectedIds array:`, selectedIds);
 
             toast.loading('Granting leaves...', { id: 'bulk-grant' });
-            const { success, error } = await addBulkLeaves(activeStudents, dateKey, false);
+            const { success, error } = await addBulkLeaves(activeStudents, dateKey, true);
 
             if (success) {
                 toast.success(`Leave granted for all ${activeStudents.length} students`, { id: 'bulk-grant' });
@@ -64,7 +64,7 @@ export default function ManageLeaves() {
                 toast.error('Student not found');
                 return;
             }
-            await addLeave(overrideMessNumber, dateKey, selectedStudent.id, false);
+            await addLeave(overrideMessNumber, dateKey, selectedStudent.id, true);
             toast.success(`Leave granted for ${overrideMessNumber} on ${dateKey}`);
         }
         setOverrideMessNumber('');
@@ -124,6 +124,17 @@ export default function ManageLeaves() {
 
             toast.loading(`Granting ${activeStudents.length * dates.length} leave(s)...`, { id: 'ltj-grant' });
 
+            // CLEANUP EXISTING LEAVES FOR THESE DATES
+            const { error: cleanupErr } = await supabase.from('leaves')
+                .delete()
+                .in('leave_date', dates)
+                .eq('hostel_id', user.hostelId);
+
+            if (cleanupErr) {
+                toast.error(`Failed to cleanup existing leaves: ${cleanupErr.message}`, { id: 'ltj-grant' });
+                return;
+            }
+
             // Build ALL records in one flat array: students × dates
             const records = activeStudents.flatMap(student =>
                 dates.map(dateKey => ({
@@ -167,6 +178,18 @@ export default function ManageLeaves() {
             if (!window.confirm(`Grant leave for ${selectedStudent.name} (${ltjMessNumber}) for ${dates.length} day(s)?\n${formatDateKey(start)} \u2192 ${formatDateKey(end)}\n\nThese will NOT count towards the monthly quota.`)) return;
 
             toast.loading(`Granting ${dates.length} leave(s)...`, { id: 'ltj-grant' });
+
+            // CLEANUP EXISTING LEAVES FOR THIS STUDENT AND DATES
+            const { error: cleanupErr } = await supabase.from('leaves')
+                .delete()
+                .eq('mess_number', ltjMessNumber)
+                .in('leave_date', dates)
+                .eq('hostel_id', user.hostelId);
+
+            if (cleanupErr) {
+                toast.error(`Failed to cleanup existing leaves: ${cleanupErr.message}`, { id: 'ltj-grant' });
+                return;
+            }
 
             // Build all records for a SINGLE bulk insert
             const records = dates.map(dateKey => ({

@@ -110,17 +110,23 @@ export function LeaveProvider({ children }) {
         const shapeDate = date.includes('T') ? date.split('T')[0] : date;
 
         // CHECK IF ALREADY EXISTS (Local Check)
-        if (leaves[shapeDate]?.some(l => l.messNumber === messNumber)) {
-            return { success: true, alreadyExists: true };
+        const existingLocal = leaves[shapeDate]?.find(l => l.messNumber === messNumber);
+        if (existingLocal) {
+            // If already exists, and we are trying to make it admin granted but it's not currently, update it
+            if (isAdminGranted && !existingLocal.isAdminGranted) {
+                // we will update db instead of insert
+            } else {
+                return { success: true, alreadyExists: true };
+            }
         }
 
         // Optimistic update
         setLeaves(prev => {
             const current = prev[shapeDate] || [];
-            if (current.some(l => l.messNumber === messNumber)) return prev;
+            const filtered = current.filter(l => l.messNumber !== messNumber);
             return {
                 ...prev,
-                [shapeDate]: [...current, { messNumber, isAdminGranted }]
+                [shapeDate]: [...filtered, { messNumber, isAdminGranted }]
             };
         });
 
@@ -135,17 +141,19 @@ export function LeaveProvider({ children }) {
             if (data) sid = data.id;
         }
 
-        // Double check in DB to be strictly sure
-        const { data: existing } = await supabase
-            .from('leaves')
-            .select('id')
-            .eq('mess_number', messNumber)
-            .eq('leave_date', shapeDate)
-            .eq('hostel_id', user.hostelId)
-            .maybeSingle();
-
-        if (existing) {
-            return { success: true, alreadyExists: true };
+        if (existingLocal) {
+             const { error: updError } = await supabase.from('leaves')
+                 .update({ is_admin_granted: true })
+                 .eq('mess_number', messNumber)
+                 .eq('leave_date', shapeDate)
+                 .eq('hostel_id', user.hostelId);
+             
+             if (updError) {
+                 console.error('Error updating leave override:', updError);
+                 fetchLeaves();
+                 return { success: false, error: updError.message };
+             }
+             return { success: true };
         }
 
         const { error } = await supabase.from('leaves').insert([{
@@ -182,11 +190,10 @@ export function LeaveProvider({ children }) {
         // Optimistic update
         setLeaves(prev => {
             const current = prev[shapeDate] || [];
-            const updated = [...current];
+            // Remove existing to replace
+            const updated = current.filter(l => !studentsList.some(s => s.messNumber === l.messNumber));
             newEntries.forEach(entry => {
-                if (!updated.some(l => l.messNumber === entry.mess_number)) {
-                    updated.push({ messNumber: entry.mess_number, isAdminGranted });
-                }
+                updated.push({ messNumber: entry.mess_number, isAdminGranted });
             });
             return { ...prev, [shapeDate]: updated };
         });
@@ -202,6 +209,14 @@ export function LeaveProvider({ children }) {
 
         for (let i = 0; i < newEntries.length; i += BATCH_SIZE) {
             const batch = newEntries.slice(i, i + BATCH_SIZE);
+            const messNumbers = batch.map(b => b.mess_number);
+
+            // Cleanup existing entries for this batch to avoid constraints/duplicates
+            await supabase.from('leaves').delete()
+                .eq('leave_date', shapeDate)
+                .in('mess_number', messNumbers)
+                .eq('hostel_id', user.hostelId);
+
             const { data, error } = await supabase.from('leaves').insert(batch).select();
             
             if (error) {
