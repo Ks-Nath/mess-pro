@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useStudents } from '../context/StudentContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
+import { Skeleton } from '../components/ui/skeleton';
 import { CalendarRange, Search, Users } from 'lucide-react';
 
 export default function LeaveTillJoinList() {
@@ -180,9 +181,12 @@ export default function LeaveTillJoinList() {
                 </CardHeader>
                 <CardContent>
                     {loading ? (
-                        <div className="text-center py-16 text-gray-400">
-                            <CalendarRange className="w-12 h-12 mx-auto mb-3 opacity-20 animate-pulse" />
-                            <p>Loading records...</p>
+                        <div className="space-y-4">
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
                         </div>
                     ) : filteredRecords.length === 0 ? (
                         <div className="text-center py-16 text-gray-400">

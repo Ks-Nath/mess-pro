@@ -6,10 +6,13 @@ import { Search, MoreHorizontal, Users, UserPlus, X, Loader2, Trash2 } from 'luc
 import { cn } from '../lib/utils';
 import { useStudents } from '../context/StudentContext';
 import { useLeaves } from '../context/LeaveContext';
+import { Skeleton } from '../components/ui/skeleton';
 
 export default function ManageStudents() {
-    const { students, loading, addStudent, removeStudent } = useStudents();
-    const { isStudentOnLeave } = useLeaves();
+    const { students, loading: studentsLoading, addStudent, removeStudent } = useStudents();
+    const { isStudentOnLeave, loading: leavesLoading } = useLeaves();
+
+    const isLoading = studentsLoading || leavesLoading;
 
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [search, setSearch] = useState('');
@@ -126,12 +129,19 @@ export default function ManageStudents() {
                 </div>
             </div>
 
-            {/* Loading State */}
-            {loading ? (
-                <div className="flex items-center justify-center p-12">
-                    <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
-                    <span className="ml-2 text-gray-500">Loading students...</span>
-                </div>
+            {/* Loading/Table State */}
+            {isLoading ? (
+                <Card className="border-gray-200 shadow-sm overflow-hidden">
+                    <CardContent className="p-0">
+                        <div className="p-6 space-y-4">
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                        </div>
+                    </CardContent>
+                </Card>
             ) : (
                 /* Table */
                 <Card className="border-gray-200 shadow-sm overflow-hidden">

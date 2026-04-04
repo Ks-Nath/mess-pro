@@ -6,6 +6,7 @@ const LeaveContext = createContext(null);
 
 export function LeaveProvider({ children }) {
     const [leaves, setLeaves] = useState({});
+    const [loading, setLoading] = useState(true);
     const { user } = useAuth();
 
     useEffect(() => {
@@ -36,11 +37,13 @@ export function LeaveProvider({ children }) {
             }
         } else {
             setLeaves({});
+            setLoading(false);
         }
     }, [user?.hostelId, user?.role]);
 
     const fetchLeaves = async () => {
         if (!user?.hostelId) return;
+        setLoading(true);
 
         const PAGE_SIZE = 100;
         let allData = [];
@@ -64,6 +67,7 @@ export function LeaveProvider({ children }) {
 
             if (error) {
                 console.error('Error fetching leaves:', error);
+                setLoading(false);
                 return;
             }
 
@@ -98,6 +102,7 @@ export function LeaveProvider({ children }) {
             }
         });
         setLeaves(leavesMap);
+        setLoading(false);
     };
 
     const getLeavesByDate = (date) => {
@@ -291,7 +296,7 @@ export function LeaveProvider({ children }) {
     };
 
     return (
-        <LeaveContext.Provider value={{ leaves, getLeavesByDate, addLeave, addBulkLeaves, removeLeave, removeBulkLeaves, isStudentOnLeave, refreshLeaves: fetchLeaves }}>
+        <LeaveContext.Provider value={{ leaves, loading, getLeavesByDate, addLeave, addBulkLeaves, removeLeave, removeBulkLeaves, isStudentOnLeave, refreshLeaves: fetchLeaves }}>
             {children}
         </LeaveContext.Provider>
     );

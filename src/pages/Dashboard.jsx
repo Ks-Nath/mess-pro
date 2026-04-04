@@ -1,12 +1,17 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLeaves } from '../context/LeaveContext';
 import { UtensilsCrossed, CalendarOff, Receipt, ArrowRight } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 
 export default function Dashboard() {
     const { user } = useAuth();
+    const { isStudentOnLeave } = useLeaves();
     const navigate = useNavigate();
+
+    const today = new Date().toLocaleDateString('en-CA');
+    const isOnLeaveToday = user?.messNumber ? isStudentOnLeave(user.messNumber, today) : false;
 
     const actions = [
         {
@@ -48,7 +53,7 @@ export default function Dashboard() {
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     <p className="text-lg text-gray-500">What would you like to do today?</p>
                     <div className="flex">
-                        {user?.messStatus === 'Active' ? (
+                        {!isOnLeaveToday ? (
                             <Badge variant="success" className="rounded-full px-3">Mess Active</Badge>
                         ) : (
                             <Badge variant="warning" className="rounded-full px-3">On Leave Today</Badge>

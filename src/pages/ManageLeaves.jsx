@@ -6,14 +6,17 @@ import { useStudents } from '../context/StudentContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import { Skeleton } from '../components/ui/skeleton';
 import toast, { Toaster } from 'react-hot-toast';
 import { CalendarIcon, UserX, CheckCircle, AlertCircle, CalendarRange, CalendarPlus } from 'lucide-react';
 
 export default function ManageLeaves() {
-    const { getLeavesByDate, addLeave, addBulkLeaves, removeLeave, removeBulkLeaves, isStudentOnLeave, refreshLeaves } = useLeaves();
+    const { getLeavesByDate, addLeave, addBulkLeaves, removeLeave, removeBulkLeaves, isStudentOnLeave, refreshLeaves, loading: leavesLoading } = useLeaves();
     const { user } = useAuth();
-    const { students } = useStudents();
+    const { students, loading: studentsLoading } = useStudents();
     const [selectedDate, setSelectedDate] = useState(new Date());
+
+    const isLoading = leavesLoading || studentsLoading;
 
     // Manual Override State
     const [overrideMessNumber, setOverrideMessNumber] = useState('');
@@ -243,13 +246,25 @@ export default function ManageLeaves() {
                             </CardTitle>
                             <CardDescription className="flex items-center justify-between">
                                 <span>Students on leave for {selectedDate.toDateString()}</span>
-                                <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100">
-                                    Total: {leavesForDate.length}
-                                </Badge>
+                                {isLoading ? (
+                                    <Skeleton className="h-6 w-16 rounded-full" />
+                                ) : (
+                                    <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100">
+                                        Total: {leavesForDate.length}
+                                    </Badge>
+                                )}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {leavesForDate.length === 0 ? (
+                            {isLoading ? (
+                                <div className="space-y-3">
+                                    <Skeleton className="h-10 w-full" />
+                                    <Skeleton className="h-10 w-full" />
+                                    <Skeleton className="h-10 w-full" />
+                                    <Skeleton className="h-10 w-full" />
+                                    <Skeleton className="h-10 w-full" />
+                                </div>
+                            ) : leavesForDate.length === 0 ? (
                                 <div className="text-center py-8 text-gray-500">
                                     <CalendarRange className="w-12 h-12 mx-auto mb-2 opacity-20" />
                                     <p>No student is on leave for this specific date.</p>
