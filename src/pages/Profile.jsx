@@ -127,14 +127,16 @@ export default function Profile() {
                         <form onSubmit={handlePasswordChange} className="space-y-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">New Password</label>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                                <div className="relative group">
+                                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                        <Lock className="h-4 w-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                                    </div>
                                     <input
                                         type="password"
                                         value={newPassword}
                                         onChange={(e) => setNewPassword(e.target.value)}
                                         style={{ paddingLeft: '2.5rem' }}
-                                        className="w-full pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                        className="w-full pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-gray-50/30 focus:bg-white"
                                         placeholder="Min 6 characters"
                                     />
                                 </div>
@@ -142,14 +144,16 @@ export default function Profile() {
 
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">Confirm Password</label>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                                <div className="relative group">
+                                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                        <Lock className="h-4 w-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                                    </div>
                                     <input
                                         type="password"
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
                                         style={{ paddingLeft: '2.5rem' }}
-                                        className="w-full pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                        className="w-full pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-gray-50/30 focus:bg-white"
                                         placeholder="Repeat password"
                                     />
                                 </div>
