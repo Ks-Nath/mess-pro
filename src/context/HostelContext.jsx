@@ -40,7 +40,7 @@ export function HostelProvider({ children }) {
                         messRate: data.mess_rate,
                         cutoffTime: data.cutoff_time,
                         hostelName: data.name,
-                        maxLeaves: data.max_leaves ?? 10, // null from DB = unlimited
+                        maxLeaves: data.max_leaves, // null from DB = unlimited
                         loading: false,
                     });
                 }
