@@ -10,6 +10,7 @@ export function HostelProvider({ children }) {
         messRate: 140, // Default fallback
         cutoffTime: 20, // Default fallback (8 PM)
         hostelName: '',
+        maxLeaves: 10, // Default fallback (null = unlimited)
         loading: true,
     });
 
@@ -23,7 +24,7 @@ export function HostelProvider({ children }) {
             try {
                 const { data, error } = await supabase
                     .from('hostels')
-                    .select('name, mess_rate, cutoff_time')
+                    .select('name, mess_rate, cutoff_time, max_leaves')
                     .eq('id', user.hostelId)
                     .single();
 
@@ -39,6 +40,7 @@ export function HostelProvider({ children }) {
                         messRate: data.mess_rate,
                         cutoffTime: data.cutoff_time,
                         hostelName: data.name,
+                        maxLeaves: data.max_leaves ?? 10, // null from DB = unlimited
                         loading: false,
                     });
                 }

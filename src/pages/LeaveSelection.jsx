@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import LeaveCalendar from '../components/LeaveCalendar';
-import { MAX_LEAVES_PER_MONTH } from '../data/mockData';
+
 import { CalendarOff, Clock, Save, AlertTriangle, X, Info } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -13,7 +13,8 @@ import { useHostel } from '../context/HostelContext';
 export default function LeaveSelection() {
     const { user } = useAuth();
     const { getLeavesByDate, addLeave, removeLeave, leaves } = useLeaves();
-    const { cutoffTime } = useHostel();
+    const { cutoffTime, maxLeaves } = useHostel();
+    const isUnlimited = maxLeaves === null;
 
     const [today, setToday] = useState(new Date());
     const [currentMonth, setCurrentMonth] = useState(today.getMonth());
@@ -62,8 +63,8 @@ export default function LeaveSelection() {
         return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
     }).length;
 
-    const remainingLeaves = MAX_LEAVES_PER_MONTH - leavesThisMonth;
-    const isCapReached = remainingLeaves <= 0;
+    const remainingLeaves = isUnlimited ? Infinity : maxLeaves - leavesThisMonth;
+    const isCapReached = !isUnlimited && remainingLeaves <= 0;
 
     const handleDateToggle = (dateStr) => {
         setPendingChanges(true); // Enable save button
@@ -101,7 +102,7 @@ export default function LeaveSelection() {
                 // Check if the date being added belongs to the viewed month
                 const d = new Date(dateStr + 'T00:00:00');
                 if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
-                    toast.error(`Maximum ${MAX_LEAVES_PER_MONTH} leave days reached for this month`, {
+                    toast.error(`Maximum ${maxLeaves} leave days reached for this month`, {
                         position: 'bottom-center',
                         style: {
                             borderRadius: '8px',
@@ -208,13 +209,14 @@ export default function LeaveSelection() {
 
     // Progress colour: green → amber → red
     const getProgressColor = () => {
-        const ratio = leavesThisMonth / MAX_LEAVES_PER_MONTH;
+        if (isUnlimited) return { bar: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-100' };
+        const ratio = leavesThisMonth / maxLeaves;
         if (ratio >= 1) return { bar: 'bg-red-500', text: 'text-red-700', bg: 'bg-red-50', border: 'border-red-100' };
         if (ratio >= 0.8) return { bar: 'bg-amber-500', text: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-100' };
         return { bar: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-100' };
     };
     const progressColors = getProgressColor();
-    const progressPercent = Math.min((leavesThisMonth / MAX_LEAVES_PER_MONTH) * 100, 100);
+    const progressPercent = isUnlimited ? 0 : Math.min((leavesThisMonth / maxLeaves) * 100, 100);
 
     return (
         <div className="space-y-8 animate-fade-in mx-auto">
@@ -259,8 +261,8 @@ export default function LeaveSelection() {
                         </div>
                     )}
 
-                    {/* Warning when nearing or at limit */}
-                    {remainingLeaves <= 2 && remainingLeaves > 0 && (
+                    {/* Warning when nearing or at limit — hidden for unlimited hostels */}
+                    {!isUnlimited && remainingLeaves <= 2 && remainingLeaves > 0 && (
                         <div className="flex gap-3 p-4 bg-amber-50 border border-amber-100 rounded-lg">
                             <Info className="w-5 h-5 text-amber-600 shrink-0" />
                             <div>
@@ -272,13 +274,13 @@ export default function LeaveSelection() {
                         </div>
                     )}
 
-                    {isCapReached && (
+                    {!isUnlimited && isCapReached && (
                         <div className="flex gap-3 p-4 bg-red-50 border border-red-100 rounded-lg">
                             <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" />
                             <div>
                                 <p className="text-sm font-semibold text-red-900">Leave limit reached</p>
                                 <p className="text-sm text-red-700 mt-0.5">
-                                    You've used all <strong>{MAX_LEAVES_PER_MONTH}</strong> leave days for this month. Deselect a date to free up a slot.
+                                    You've used all <strong>{maxLeaves}</strong> leave days for this month. Deselect a date to free up a slot.
                                 </p>
                             </div>
                         </div>
@@ -292,7 +294,7 @@ export default function LeaveSelection() {
                             onDateToggle={handleDateToggle}
                             onPrevMonth={handlePrevMonth}
                             onNextMonth={handleNextMonth}
-                            maxLeaves={MAX_LEAVES_PER_MONTH}
+                            maxLeaves={isUnlimited ? null : maxLeaves}
                             leavesUsedThisMonth={leavesThisMonth}
                             today={today}
                             cutoffTime={cutoffTime}
@@ -314,19 +316,23 @@ export default function LeaveSelection() {
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-xs font-semibold text-gray-600">Monthly Quota</span>
                                     <span className={`text-xs font-bold ${progressColors.text}`}>
-                                        {leavesThisMonth} / {MAX_LEAVES_PER_MONTH}
+                                        {isUnlimited ? `${leavesThisMonth} / ∞` : `${leavesThisMonth} / ${maxLeaves}`}
                                     </span>
                                 </div>
-                                <div className="w-full h-2 bg-white/80 rounded-full overflow-hidden">
-                                    <div
-                                        className={`h-full rounded-full transition-all duration-500 ease-out ${progressColors.bar}`}
-                                        style={{ width: `${progressPercent}%` }}
-                                    />
-                                </div>
+                                {!isUnlimited && (
+                                    <div className="w-full h-2 bg-white/80 rounded-full overflow-hidden">
+                                        <div
+                                            className={`h-full rounded-full transition-all duration-500 ease-out ${progressColors.bar}`}
+                                            style={{ width: `${progressPercent}%` }}
+                                        />
+                                    </div>
+                                )}
                                 <p className="text-xs text-gray-500 mt-1.5">
-                                    {isCapReached
-                                        ? 'No leaves remaining'
-                                        : `${remainingLeaves} ${remainingLeaves === 1 ? 'day' : 'days'} remaining`
+                                    {isUnlimited
+                                        ? 'Unlimited leaves available'
+                                        : isCapReached
+                                            ? 'No leaves remaining'
+                                            : `${remainingLeaves} ${remainingLeaves === 1 ? 'day' : 'days'} remaining`
                                     }
                                 </p>
                             </div>
