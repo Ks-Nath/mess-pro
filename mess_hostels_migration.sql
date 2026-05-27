@@ -10,6 +10,10 @@ create table public.hostels (
 -- Turn on RLS
 alter table public.hostels enable row level security;
 
+-- Explicitly grant access to the Data API (PostgREST)
+-- Required for new tables due to Supabase changes starting May 30, 2026
+grant select, insert, update, delete on table public.hostels to anon, authenticated, service_role;
+
 -- Policy: Everyone can read hostels (for login/signup selection if needed, or generally public info)
 create policy "Hostels are viewable by everyone"
   on public.hostels for select
