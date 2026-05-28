@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLeaves } from '../context/LeaveContext';
 import { useHostel } from '../context/HostelContext';
-import { Receipt, Calendar, Minus, CheckCircle2, Loader2 } from 'lucide-react';
+import { Receipt, Calendar, Minus, CheckCircle2, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Separator } from '../components/ui/separator';
@@ -11,12 +12,25 @@ export default function MessBill() {
     const { getLeavesByDate } = useLeaves();
     const { messRate } = useHostel();
 
+    const [selectedDate, setSelectedDate] = useState(new Date());
+
     if (!user) return <div className="p-8 text-center">Please log in to view bill.</div>;
 
-    // Calculate bill for current month
     const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth(); // 0-indexed
+    
+    // Calculate bill for selected month
+    const currentYear = selectedDate.getFullYear();
+    const currentMonth = selectedDate.getMonth(); // 0-indexed
+
+    const isCurrentMonth = currentYear === now.getFullYear() && currentMonth === now.getMonth();
+
+    const handlePrevMonth = () => {
+        setSelectedDate(new Date(currentYear, currentMonth - 1, 1));
+    };
+
+    const handleNextMonth = () => {
+        setSelectedDate(new Date(currentYear, currentMonth + 1, 1));
+    };
 
     // Get total days in current month
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
@@ -36,7 +50,7 @@ export default function MessBill() {
     const totalAmount = activeDays * messRate;
     const savings = leaveCount * messRate;
 
-    const monthName = now.toLocaleString('default', { month: 'long' });
+    const monthName = selectedDate.toLocaleString('default', { month: 'long' });
 
     return (
         <div className="space-y-8 animate-fade-in mx-auto max-w-4xl">
@@ -46,7 +60,17 @@ export default function MessBill() {
                     <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-2">My Monthly Bill</h1>
                     <p className="text-gray-500 text-lg">Billing details for {monthName} {currentYear}</p>
                 </div>
-                {/* Download PDF button removed */}
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon" onClick={handlePrevMonth}>
+                        <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <div className="font-semibold text-gray-900 min-w-[140px] text-center">
+                        {monthName} {currentYear}
+                    </div>
+                    <Button variant="outline" size="icon" onClick={handleNextMonth} disabled={isCurrentMonth}>
+                        <ChevronRight className="w-4 h-4" />
+                    </Button>
+                </div>
             </div>
 
             <Card className="border-gray-200 shadow-sm overflow-hidden">
