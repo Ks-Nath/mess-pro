@@ -45,10 +45,17 @@ export function LeaveProvider({ children }) {
         if (!user?.hostelId) return;
         setLoading(true);
 
-        const PAGE_SIZE = 100;
+        const PAGE_SIZE = 1000;
         let allData = [];
         let from = 0;
         let keepFetching = true;
+
+        // Date bounds: 2 months ago to 2 months from now
+        const now = new Date();
+        const pastDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+        const futureDate = new Date(now.getFullYear(), now.getMonth() + 2, now.getDate());
+        const pastStr = pastDate.toISOString().split('T')[0];
+        const futureStr = futureDate.toISOString().split('T')[0];
 
         while (keepFetching) {
             let query = supabase
@@ -56,6 +63,8 @@ export function LeaveProvider({ children }) {
                 .select('leave_date, mess_number, is_admin_granted')
                 .eq('status', 'Approved')
                 .eq('hostel_id', user.hostelId)
+                .gte('leave_date', pastStr)
+                .lte('leave_date', futureStr)
                 .range(from, from + PAGE_SIZE - 1);
 
             // If STUDENT, only fetch OWN leaves
