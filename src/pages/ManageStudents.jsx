@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -6,13 +6,19 @@ import { Search, MoreHorizontal, Users, UserPlus, X, Loader2, Trash2 } from 'luc
 import { cn } from '../lib/utils';
 import { useStudents } from '../context/StudentContext';
 import { useLeaves } from '../context/LeaveContext';
+import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../context/AuthContext';
 import { Skeleton } from '../components/ui/skeleton';
 
 export default function ManageStudents() {
+    const { user } = useAuth();
     const { students, loading: studentsLoading, addStudent, removeStudent } = useStudents();
-    const { isStudentOnLeave, loading: leavesLoading } = useLeaves();
+    const { loading: leavesContextLoading } = useLeaves();
 
-    const isLoading = studentsLoading || leavesLoading;
+    const [dateLeaves, setDateLeaves] = useState([]);
+    const [leavesLoading, setLeavesLoading] = useState(false);
+
+    const isLoading = studentsLoading || leavesContextLoading || leavesLoading;
 
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [search, setSearch] = useState('');
@@ -26,9 +32,31 @@ export default function ManageStudents() {
 
     const formatDateKey = (date) => date.toISOString().split('T')[0];
 
+    useEffect(() => {
+        if (!user?.hostelId) return;
+        const fetchDateLeaves = async () => {
+            setLeavesLoading(true);
+            const dateStr = formatDateKey(selectedDate);
+            const { data, error } = await supabase
+                .from('leaves')
+                .select('mess_number')
+                .eq('hostel_id', user.hostelId)
+                .eq('leave_date', dateStr)
+                .eq('status', 'Approved');
+
+            if (!error && data) {
+                setDateLeaves(data.map(d => d.mess_number));
+            } else {
+                setDateLeaves([]);
+            }
+            setLeavesLoading(false);
+        };
+        fetchDateLeaves();
+    }, [user?.hostelId, selectedDate]);
+
     // Derive students with dynamic status
     const studentsWithStatus = students.map(student => {
-        const onLeave = isStudentOnLeave(student.messNumber, formatDateKey(selectedDate));
+        const onLeave = dateLeaves.includes(student.messNumber);
         return { ...student, status: onLeave ? 'On Leave' : 'Active' };
     });
 

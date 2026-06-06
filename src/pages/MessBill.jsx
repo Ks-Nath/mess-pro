@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
-import { useLeaves } from '../context/LeaveContext';
 import { useHostel } from '../context/HostelContext';
 import { Receipt, Calendar, Minus, CheckCircle2, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
@@ -9,10 +9,11 @@ import { Separator } from '../components/ui/separator';
 
 export default function MessBill() {
     const { user } = useAuth();
-    const { getLeavesByDate } = useLeaves();
     const { messRate } = useHostel();
 
     const [selectedDate, setSelectedDate] = useState(new Date());
+    const [monthLeaves, setMonthLeaves] = useState([]);
+    const [loadingLeaves, setLoadingLeaves] = useState(false);
 
     if (!user) return <div className="p-8 text-center">Please log in to view bill.</div>;
 
@@ -35,13 +36,39 @@ export default function MessBill() {
     // Get total days in current month
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
+    useEffect(() => {
+        if (!user?.hostelId || !user?.messNumber) return;
+
+        const fetchMonthLeaves = async () => {
+            setLoadingLeaves(true);
+            const startStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
+            const endStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
+
+            const { data, error } = await supabase
+                .from('leaves')
+                .select('leave_date')
+                .eq('status', 'Approved')
+                .eq('hostel_id', user.hostelId)
+                .eq('mess_number', user.messNumber)
+                .gte('leave_date', startStr)
+                .lte('leave_date', endStr);
+
+            if (error) {
+                console.error(error);
+                setMonthLeaves([]);
+            } else {
+                setMonthLeaves(data.map(d => d.leave_date));
+            }
+            setLoadingLeaves(false);
+        };
+        fetchMonthLeaves();
+    }, [user?.hostelId, user?.messNumber, currentYear, currentMonth, daysInMonth]);
+
     // Calculate leaves taken this month
     let leaveCount = 0;
     for (let day = 1; day <= daysInMonth; day++) {
         const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const leavesOnDay = getLeavesByDate(dateKey) || [];
-        // leavesOnDay is now [{ messNumber, isAdminGranted }, ...]
-        if (leavesOnDay.some(l => l.messNumber === user.messNumber)) {
+        if (monthLeaves.includes(dateKey)) {
             leaveCount++;
         }
     }

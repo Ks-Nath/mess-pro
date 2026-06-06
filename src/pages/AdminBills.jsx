@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { useLeaves } from '../context/LeaveContext';
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../context/AuthContext';
 import { useStudents } from '../context/StudentContext';
 import { useHostel } from '../context/HostelContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
@@ -10,8 +11,8 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
 export default function AdminBills() {
+    const { user } = useAuth();
     const { students } = useStudents();
-    const { getLeavesByDate } = useLeaves();
     const { messRate } = useHostel();
 
     // Mode: 'month' or 'range'
@@ -19,6 +20,8 @@ export default function AdminBills() {
     const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
     const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
     const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10));
+    const [rangeLeaves, setRangeLeaves] = useState({});
+    const [loadingLeaves, setLoadingLeaves] = useState(false);
 
     // Compute the date list based on mode
     const getDateRange = () => {
@@ -47,6 +50,50 @@ export default function AdminBills() {
     const dateRange = getDateRange();
     const totalDays = dateRange.length;
 
+    useEffect(() => {
+        if (!user?.hostelId || totalDays === 0) return;
+
+        const fetchRangeLeaves = async () => {
+            setLoadingLeaves(true);
+            const sDate = dateRange[0];
+            const eDate = dateRange[dateRange.length - 1];
+
+            const PAGE_SIZE = 1000;
+            let allData = [];
+            let from = 0;
+            let keepFetching = true;
+
+            while (keepFetching) {
+                const { data, error } = await supabase
+                    .from('leaves')
+                    .select('leave_date, mess_number')
+                    .eq('status', 'Approved')
+                    .eq('hostel_id', user.hostelId)
+                    .gte('leave_date', sDate)
+                    .lte('leave_date', eDate)
+                    .range(from, from + PAGE_SIZE - 1);
+
+                if (error) {
+                    console.error(error);
+                    break;
+                }
+                if (data && data.length > 0) allData = allData.concat(data);
+                if (!data || data.length < PAGE_SIZE) keepFetching = false;
+                else from += PAGE_SIZE;
+            }
+
+            const leavesMap = {};
+            allData.forEach(record => {
+                const d = record.leave_date;
+                if (!leavesMap[d]) leavesMap[d] = [];
+                leavesMap[d].push({ messNumber: record.mess_number });
+            });
+            setRangeLeaves(leavesMap);
+            setLoadingLeaves(false);
+        };
+        fetchRangeLeaves();
+    }, [user?.hostelId, selectedMonth, startDate, endDate, mode]);
+
     // Period label for display
     const periodLabel = mode === 'month'
         ? new Date(selectedMonth + '-01').toLocaleString('default', { month: 'long', year: 'numeric' })
@@ -56,7 +103,7 @@ export default function AdminBills() {
     const studentBills = students.map(student => {
         let leaveCount = 0;
         dateRange.forEach(dateKey => {
-            const leavesOnDay = getLeavesByDate(dateKey) || [];
+            const leavesOnDay = rangeLeaves[dateKey] || [];
             if (leavesOnDay.some(l => l.messNumber === student.messNumber)) {
                 leaveCount++;
             }
@@ -145,7 +192,7 @@ export default function AdminBills() {
                 const dayPart = dateKey.split('-')[2];
                 const dayHeader = dayPart.startsWith('0') ? dayPart.substring(1) : dayPart;
 
-                const leavesOnDay = getLeavesByDate(dateKey) || [];
+                const leavesOnDay = rangeLeaves[dateKey] || [];
                 const isLeave = leavesOnDay.some(l => l.messNumber === s.messNumber);
 
                 row[dayHeader] = isLeave ? 'L' : 'X';
