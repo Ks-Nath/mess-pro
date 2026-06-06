@@ -50,10 +50,17 @@ export function LeaveProvider({ children }) {
         let from = 0;
         let keepFetching = true;
 
-        // Date bounds: 2 months ago to 2 months from now
+        // Date bounds: 2 months ago to 2 months from now for students
+        // Admins get a wider view (e.g., from Jan 1 of last year to Dec 31 of next year)
         const now = new Date();
-        const pastDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-        const futureDate = new Date(now.getFullYear(), now.getMonth() + 2, now.getDate());
+        let pastDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+        let futureDate = new Date(now.getFullYear(), now.getMonth() + 2, now.getDate());
+
+        if (user.role === 'admin') {
+            pastDate = new Date(now.getFullYear() - 1, 0, 1);
+            futureDate = new Date(now.getFullYear() + 1, 11, 31);
+        }
+
         const pastStr = pastDate.toISOString().split('T')[0];
         const futureStr = futureDate.toISOString().split('T')[0];
 
