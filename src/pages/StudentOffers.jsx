@@ -6,8 +6,8 @@ export default function StudentOffers() {
         <div className="space-y-8 animate-fade-in">
             {/* Header */}
             <div>
-                <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-2">Student Offers</h1>
-                <p className="text-gray-500 text-lg">Check out exclusive student discounts and brochures.</p>
+                <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-2">Exclusive student offers.</h1>
+                <p className="text-gray-500 text-lg">For MessPro users</p>
             </div>
 
             {/* Main Advertisement Brochure Card */}

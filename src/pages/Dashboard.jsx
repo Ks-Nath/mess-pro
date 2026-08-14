@@ -24,7 +24,7 @@ export default function Dashboard() {
             border: 'hover:border-orange-200',
         },
         {
-            title: 'Student Offers',
+            title: 'STUDENT OFFERS',
             description: 'Check out exclusive student discounts, vouchers and local brochures.',
             icon: Megaphone,
             path: '/dashboard/offers',

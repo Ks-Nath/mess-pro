@@ -14,7 +14,7 @@ export default function DashboardLayout() {
         { to: '/dashboard/leave', label: 'Leave', icon: CalendarOff },
         { to: '/dashboard/bill', label: 'Mess Bill', icon: Receipt },
         { to: '/dashboard/profile', label: 'Profile', icon: User },
-        { to: '/dashboard/offers', label: 'Student Offer', icon: Megaphone },
+        { to: '/dashboard/offers', label: 'STUDENT OFFERS', icon: Megaphone },
     ];
 
     return (
