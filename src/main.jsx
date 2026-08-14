@@ -12,8 +12,13 @@ import { registerSW } from 'virtual:pwa-register'
 
 import { MenuProvider } from './context/MenuContext'
 
-// Register PWA service worker with autoUpdate
-registerSW({ immediate: true })
+// Register PWA service worker with immediate auto-reload on new update
+registerSW({
+    immediate: true,
+    onNeedRefresh() {
+        window.location.reload();
+    },
+})
 
 createRoot(document.getElementById('root')).render(
     <StrictMode>
