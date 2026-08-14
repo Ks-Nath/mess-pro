@@ -30,7 +30,7 @@ export default function Dashboard() {
             path: '/dashboard/offers',
             color: 'text-purple-600',
             bg: 'bg-purple-50',
-            border: 'hover:border-purple-200',
+            border: 'border-purple-300 hover:border-purple-400 shadow-md shadow-purple-100 hover:shadow-lg hover:shadow-purple-200/50 ring-1 ring-purple-500/10',
         },
         {
             title: 'Apply for Leave',
