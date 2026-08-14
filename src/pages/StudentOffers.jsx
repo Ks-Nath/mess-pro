@@ -1,15 +1,17 @@
 import React, { useState, useRef } from 'react';
 import { Card, CardContent } from '../components/ui/card';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import brochureImg1 from '../assets/brochure.jpg';
+import brochureImg2 from '../assets/brochure2.png';
 
 export default function StudentOffers() {
     const [activeIndex, setActiveIndex] = useState(0);
     const scrollContainerRef = useRef(null);
 
-    // Using the uploaded images
+    // Using imported assets ensures they load correctly in deployed environments
     const slides = [
-        { id: 1, type: 'image', src: '/brochure.jpg', alt: 'Student Discount Brochure 1' },
-        { id: 2, type: 'image', src: '/brochure2.png', alt: 'Student Discount Brochure 2' }
+        { id: 1, type: 'image', src: brochureImg1, alt: 'Student Discount Brochure 1' },
+        { id: 2, type: 'image', src: brochureImg2, alt: 'Student Discount Brochure 2' }
     ];
 
     const scrollTo = (index) => {
