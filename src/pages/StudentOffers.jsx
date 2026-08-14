@@ -6,10 +6,10 @@ export default function StudentOffers() {
     const [activeIndex, setActiveIndex] = useState(0);
     const scrollContainerRef = useRef(null);
 
-    // When the second image is ready, replace the placeholder object with an image object
+    // Using the uploaded images
     const slides = [
-        { id: 1, type: 'image', src: '/brochure.png', alt: 'Student Discount Brochure' },
-        { id: 2, type: 'placeholder', text: 'More offers coming soon!' }
+        { id: 1, type: 'image', src: '/brochure.jpg', alt: 'Student Discount Brochure 1' },
+        { id: 2, type: 'image', src: '/brochure2.png', alt: 'Student Discount Brochure 2' }
     ];
 
     const scrollTo = (index) => {
