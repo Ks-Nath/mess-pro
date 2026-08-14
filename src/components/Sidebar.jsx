@@ -8,6 +8,7 @@ import {
     LogOut,
     ChefHat,
     User,
+    Megaphone,
 } from 'lucide-react';
 
 const navItems = [
@@ -16,6 +17,7 @@ const navItems = [
     { to: '/dashboard/leave', label: 'Leave', icon: CalendarOff },
     { to: '/dashboard/bill', label: 'Mess Bill', icon: Receipt },
     { to: '/dashboard/profile', label: 'Profile', icon: User },
+    { to: '/dashboard/offers', label: 'Student Offer', icon: Megaphone },
 ];
 
 export default function Sidebar() {

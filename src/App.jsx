@@ -15,6 +15,7 @@ import LeaveTillJoinList from './pages/LeaveTillJoinList';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './layouts/DashboardLayout';
 import AdminLayout from './layouts/AdminLayout';
+import StudentOffers from './pages/StudentOffers';
 
 export default function App() {
     return (
@@ -36,6 +37,7 @@ export default function App() {
                 <Route path="leave" element={<LeaveSelection />} />
                 <Route path="bill" element={<MessBill />} />
                 <Route path="profile" element={<Profile />} />
+                <Route path="offers" element={<StudentOffers />} />
             </Route>
 
             {/* Admin Routes */}

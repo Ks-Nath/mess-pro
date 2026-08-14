@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLeaves } from '../context/LeaveContext';
-import { UtensilsCrossed, CalendarOff, Receipt, ArrowRight } from 'lucide-react';
+import { UtensilsCrossed, CalendarOff, Receipt, ArrowRight, Megaphone } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 
@@ -22,6 +22,15 @@ export default function Dashboard() {
             color: 'text-orange-600',
             bg: 'bg-orange-50',
             border: 'hover:border-orange-200',
+        },
+        {
+            title: 'Student Offers',
+            description: 'Check out exclusive student discounts, vouchers and local brochures.',
+            icon: Megaphone,
+            path: '/dashboard/offers',
+            color: 'text-purple-600',
+            bg: 'bg-purple-50',
+            border: 'hover:border-purple-200',
         },
         {
             title: 'Apply for Leave',
