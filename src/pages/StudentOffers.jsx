@@ -161,7 +161,10 @@ function CouponCard() {
                     <p className="text-xl sm:text-2xl font-bold text-gray-800">
                         10% off on purchases above ₹300
                     </p>
-                    <p className="text-sm text-gray-500 mt-3">Apply this code at checkout to avail the discount</p>
+                    <p className="text-base font-bold text-indigo-600 mt-1">
+                        only on 19/8/2026
+                    </p>
+                    <p className="text-sm text-gray-500 mt-2">Apply this code at checkout to avail the discount</p>
                 </div>
             </div>
         </div>
