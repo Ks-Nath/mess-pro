@@ -13,7 +13,7 @@ function OffersSlider() {
     if (slides.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
-                <p className="text-gray-400 font-medium">No offers available at the moment.</p>
+                <p className="text-gray-400 font-medium">Check the coupon codes section below</p>
             </div>
         );
     }
