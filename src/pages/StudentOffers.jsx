@@ -8,10 +8,15 @@ function OffersSlider() {
     const [activeIndex, setActiveIndex] = useState(0);
     const scrollContainerRef = useRef(null);
 
-    const slides = [
-        { id: 1, type: 'image', src: brochureImg1, alt: 'Student Discount Brochure 1' },
-        { id: 2, type: 'image', src: brochureImg2, alt: 'Student Discount Brochure 2' }
-    ];
+    const slides = [];
+
+    if (slides.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-12 px-4 text-center bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+                <p className="text-gray-400 font-medium">No offers available at the moment.</p>
+            </div>
+        );
+    }
 
     const scrollTo = (index) => {
         if (!scrollContainerRef.current) return;
