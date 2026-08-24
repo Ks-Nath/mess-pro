@@ -3,20 +3,15 @@ import { Card, CardContent } from '../components/ui/card';
 import { ChevronLeft, ChevronRight, ChevronDown, Tag, Ticket, Copy, Check } from 'lucide-react';
 import brochureImg1 from '../assets/brochure.jpg';
 import brochureImg2 from '../assets/brochure2.png';
+import tCompanyOfferImg from '../assets/t_company_offer.png';
 
 function OffersSlider() {
     const [activeIndex, setActiveIndex] = useState(0);
     const scrollContainerRef = useRef(null);
 
-    const slides = [];
-
-    if (slides.length === 0) {
-        return (
-            <div className="flex flex-col items-center justify-center py-12 px-4 text-center bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
-                <p className="text-gray-400 font-medium">Check the coupon codes section below</p>
-            </div>
-        );
-    }
+    const slides = [
+        { id: 1, type: 'image', src: tCompanyOfferImg, alt: 'Special Offer' }
+    ];
 
     const scrollTo = (index) => {
         if (!scrollContainerRef.current) return;
@@ -103,18 +98,20 @@ function OffersSlider() {
             </Card>
 
             {/* Dot Indicators */}
-            <div className="flex justify-center gap-2 mt-4">
-                {slides.map((_, index) => (
-                    <button
-                        key={index}
-                        onClick={() => scrollTo(index)}
-                        className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                            activeIndex === index ? 'bg-indigo-600 w-4' : 'bg-gray-300 hover:bg-gray-400'
-                        }`}
-                        aria-label={`Go to slide ${index + 1}`}
-                    />
-                ))}
-            </div>
+            {slides.length > 1 && (
+                <div className="flex justify-center gap-2 mt-4">
+                    {slides.map((_, index) => (
+                        <button
+                            key={index}
+                            onClick={() => scrollTo(index)}
+                            className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                activeIndex === index ? 'bg-indigo-600 w-4' : 'bg-gray-300 hover:bg-gray-400'
+                            }`}
+                            aria-label={`Go to slide ${index + 1}`}
+                        />
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
@@ -177,7 +174,7 @@ function CouponCard() {
 }
 
 export default function StudentOffers() {
-    const [offersOpen, setOffersOpen] = useState(false);
+    const [offersOpen, setOffersOpen] = useState(true);
     const [couponOpen, setCouponOpen] = useState(false);
 
     return (
