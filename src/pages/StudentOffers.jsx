@@ -167,7 +167,7 @@ function CouponCard() {
                         10% off on purchases above ₹300
                     </p>
                     <p className="text-base font-bold text-indigo-600 mt-1">
-                        only on 19/8/2026
+                        Only on Mondays
                     </p>
                     <p className="text-sm text-gray-500 mt-2">Apply this code at checkout to avail the discount</p>
                 </div>
