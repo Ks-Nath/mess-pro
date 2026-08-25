@@ -4,13 +4,15 @@ import { ChevronLeft, ChevronRight, ChevronDown, Tag, Ticket, Copy, Check } from
 import brochureImg1 from '../assets/brochure.jpg';
 import brochureImg2 from '../assets/brochure2.png';
 import tCompanyOfferImg from '../assets/t_company_offer.png';
+import tCompanyOnamOfferImg from '../assets/t_company_onam_offer.jpg';
 
 function OffersSlider() {
     const [activeIndex, setActiveIndex] = useState(0);
     const scrollContainerRef = useRef(null);
 
     const slides = [
-        { id: 1, type: 'image', src: tCompanyOfferImg, alt: 'Special Offer' }
+        { id: 1, type: 'image', src: tCompanyOnamOfferImg, alt: 'Onam Special Offer' },
+        { id: 2, type: 'image', src: tCompanyOfferImg, alt: 'Special Offer' }
     ];
 
     const scrollTo = (index) => {
